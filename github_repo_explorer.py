@@ -4,10 +4,79 @@ import os
 import sys
 import subprocess
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 import json
+import argparse
 from pathlib import Path
+
+class ConfigManager:
+    def __init__(self, config_file="config.json"):
+        self.config_file = config_file
+        self.default_config = {
+            "default_repository_path": "/home/yjaffres/www/kering",
+            "max_scan_depth": 3,
+            "fetch_timeout_seconds": 30,
+            "gui_window_size": "1400x800",
+            "show_empty_folders": True,
+            "theme": {
+                "clean_repository_color": "#d5f4e6",
+                "modified_repository_color": "#ffeaa7",
+                "title_background": "#2c3e50",
+                "search_background": "#ecf0f1",
+                "status_background": "#34495e"
+            }
+        }
+        self.config = self._load_config()
+    
+    def _load_config(self):
+        """Charge la configuration depuis le fichier JSON"""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                # Fusionner avec la config par défaut pour les clés manquantes
+                return {**self.default_config, **config}
+            else:
+                # Créer le fichier config par défaut
+                self.save_config(self.default_config)
+                return self.default_config.copy()
+        except Exception as e:
+            print(f"Erreur lors du chargement de la config: {e}")
+            return self.default_config.copy()
+    
+    def save_config(self, config=None):
+        """Sauvegarde la configuration dans le fichier JSON"""
+        try:
+            config_to_save = config or self.config
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config_to_save, f, indent=4, ensure_ascii=False)
+            return True
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde de la config: {e}")
+            return False
+    
+    def get(self, key, default=None):
+        """Récupère une valeur de configuration"""
+        keys = key.split('.')
+        value = self.config
+        for k in keys:
+            if isinstance(value, dict) and k in value:
+                value = value[k]
+            else:
+                return default
+        return value
+    
+    def set(self, key, value):
+        """Définit une valeur de configuration"""
+        keys = key.split('.')
+        config = self.config
+        for k in keys[:-1]:
+            if k not in config:
+                config[k] = {}
+            config = config[k]
+        config[keys[-1]] = value
+        self.save_config()
 
 class GitRepoInfo:
     def __init__(self, path, relative_path=None):
@@ -112,11 +181,12 @@ class GitRepoInfo:
             pass
 
 class GitRepoExplorer:
-    def __init__(self, root_path):
-        self.root_path = root_path
+    def __init__(self, root_path=None):
+        self.config = ConfigManager()
+        self.root_path = root_path or self.config.get('default_repository_path')
         self.root = tk.Tk()
         self.root.title("GitHub Repository Explorer - Kering")
-        self.root.geometry("1400x800")
+        self.root.geometry(self.config.get('gui_window_size', '1400x800'))
         self.root.configure(bg='#f0f0f0')
         
         self.repos = []
@@ -192,6 +262,18 @@ class GitRepoExplorer:
             padx=15
         )
         fetch_btn.pack(side='right', padx=5, pady=10)
+        
+        change_folder_btn = tk.Button(
+            search_frame, 
+            text=">>> Changer Dossier",
+            command=self._change_root_folder,
+            bg='#9b59b6',
+            fg='white',
+            font=('Segoe UI', 9),
+            relief='flat',
+            padx=15
+        )
+        change_folder_btn.pack(side='right', padx=5, pady=10)
         
         # Frame principal
         main_frame = tk.Frame(self.root, bg='#f0f0f0')
@@ -846,15 +928,84 @@ class GitRepoExplorer:
     def _refresh_repositories(self):
         self._load_repositories()
     
+    def _change_root_folder(self):
+        """Permet de changer le dossier racine à explorer"""
+        new_folder = filedialog.askdirectory(
+            title="Sélectionner le dossier contenant les repositories Git",
+            initialdir=self.root_path
+        )
+        
+        if new_folder and new_folder != self.root_path:
+            self.root_path = new_folder
+            
+            # Sauvegarder le nouveau chemin dans la config
+            self.config.set('default_repository_path', new_folder)
+            
+            # Mettre à jour le titre de la fenêtre
+            folder_name = os.path.basename(new_folder)
+            self.root.title(f"GitHub Repository Explorer - {folder_name}")
+            
+            # Recharger les repositories
+            self._load_repositories()
+            
+            messagebox.showinfo(
+                "Dossier changé", 
+                f"Nouveau dossier sélectionné:\n{new_folder}\n\nLe chemin a été sauvegardé dans la configuration."
+            )
+    
     def run(self):
         self.root.mainloop()
 
 def main():
-    root_path = "/home/yjaffres/www/kering"
+    # Parse des arguments de ligne de commande
+    parser = argparse.ArgumentParser(
+        description="GitHub Repository Explorer - Explore et gère vos repositories Git",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples d'utilisation:
+  python3 github_repo_explorer.py                    # Utilise le chemin configuré
+  python3 github_repo_explorer.py /path/to/repos     # Utilise un chemin spécifique
+  python3 github_repo_explorer.py --config           # Affiche la configuration actuelle
+        """
+    )
     
+    parser.add_argument(
+        'path', 
+        nargs='?', 
+        help='Chemin vers le dossier contenant les repositories Git'
+    )
+    
+    parser.add_argument(
+        '--config', 
+        action='store_true', 
+        help='Affiche la configuration actuelle et quitte'
+    )
+    
+    args = parser.parse_args()
+    
+    # Gérer l'option --config
+    if args.config:
+        config = ConfigManager()
+        print("=== Configuration actuelle ===")
+        print(json.dumps(config.config, indent=2, ensure_ascii=False))
+        print(f"\nFichier de configuration: {os.path.abspath(config.config_file)}")
+        return
+    
+    # Déterminer le chemin à utiliser
+    config = ConfigManager()
+    root_path = args.path or config.get('default_repository_path')
+    
+    # Vérifier que le chemin existe
     if not os.path.exists(root_path):
-        print(f"Erreur: Le chemin {root_path} n'existe pas.")
+        print(f"❌ Erreur: Le chemin '{root_path}' n'existe pas.")
+        print(f"\nSolutions:")
+        print(f"• Vérifiez le chemin dans le fichier config.json")
+        print(f"• Utilisez: python3 {sys.argv[0]} /chemin/vers/vos/repos")
+        print(f"• Modifiez la configuration avec le bouton 'Changer Dossier' dans l'interface")
         sys.exit(1)
+    
+    print(f"🚀 Lancement de GitHub Repository Explorer")
+    print(f"📁 Dossier à explorer: {root_path}")
     
     app = GitRepoExplorer(root_path)
     app.run()

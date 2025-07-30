@@ -1,0 +1,14 @@
+{
+    "default_repository_path": "/CHANGEZ/CE/CHEMIN/VERS/VOS/REPOS",
+    "max_scan_depth": 3,
+    "fetch_timeout_seconds": 30,
+    "gui_window_size": "1400x800",
+    "show_empty_folders": true,
+    "theme": {
+        "clean_repository_color": "#d5f4e6",
+        "modified_repository_color": "#ffeaa7",
+        "title_background": "#2c3e50",
+        "search_background": "#ecf0f1",
+        "status_background": "#34495e"
+    }
+}

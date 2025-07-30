@@ -5,7 +5,76 @@ import sys
 import subprocess
 from datetime import datetime
 import json
+import argparse
 from pathlib import Path
+
+class ConfigManager:
+    def __init__(self, config_file="config.json"):
+        self.config_file = config_file
+        self.default_config = {
+            "default_repository_path": "/home/yjaffres/www/kering",
+            "max_scan_depth": 3,
+            "fetch_timeout_seconds": 30,
+            "gui_window_size": "1400x800",
+            "show_empty_folders": True,
+            "theme": {
+                "clean_repository_color": "#d5f4e6",
+                "modified_repository_color": "#ffeaa7",
+                "title_background": "#2c3e50",
+                "search_background": "#ecf0f1",
+                "status_background": "#34495e"
+            }
+        }
+        self.config = self._load_config()
+    
+    def _load_config(self):
+        """Charge la configuration depuis le fichier JSON"""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                # Fusionner avec la config par défaut pour les clés manquantes
+                return {**self.default_config, **config}
+            else:
+                # Créer le fichier config par défaut
+                self.save_config(self.default_config)
+                return self.default_config.copy()
+        except Exception as e:
+            print(f"Erreur lors du chargement de la config: {e}")
+            return self.default_config.copy()
+    
+    def save_config(self, config=None):
+        """Sauvegarde la configuration dans le fichier JSON"""
+        try:
+            config_to_save = config or self.config
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config_to_save, f, indent=4, ensure_ascii=False)
+            return True
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde de la config: {e}")
+            return False
+    
+    def get(self, key, default=None):
+        """Récupère une valeur de configuration"""
+        keys = key.split('.')
+        value = self.config
+        for k in keys:
+            if isinstance(value, dict) and k in value:
+                value = value[k]
+            else:
+                return default
+        return value
+    
+    def set(self, key, value):
+        """Définit une valeur de configuration"""
+        keys = key.split('.')
+        config = self.config
+        for k in keys[:-1]:
+            if k not in config:
+                config[k] = {}
+            config = config[k]
+        config[keys[-1]] = value
+        self.save_config()
 
 class GitRepoInfo:
     def __init__(self, path, relative_path=None):
@@ -110,13 +179,17 @@ class GitRepoInfo:
             pass
 
 class ConsoleRepoExplorer:
-    def __init__(self, root_path):
-        self.root_path = root_path
+    def __init__(self, root_path=None):
+        self.config = ConfigManager()
+        self.root_path = root_path or self.config.get('default_repository_path')
         self.repos = []
         
-    def _find_all_git_repos(self, root_path, current_path="", max_depth=3):
+    def _find_all_git_repos(self, root_path, current_path="", max_depth=None):
         """Trouve récursivement tous les repositories Git"""
         repos = []
+        
+        if max_depth is None:
+            max_depth = self.config.get('max_scan_depth', 3)
         
         if current_path.count(os.sep) >= max_depth:
             return repos
@@ -433,11 +506,55 @@ class ConsoleRepoExplorer:
         print(f"\n" + "="*80)
 
 def main():
-    root_path = "/home/yjaffres/www/kering"
+    # Parse des arguments de ligne de commande
+    parser = argparse.ArgumentParser(
+        description="GitHub Repository Explorer (Console) - Explore et gère vos repositories Git",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples d'utilisation:
+  python3 console_repo_explorer.py                   # Utilise le chemin configuré
+  python3 console_repo_explorer.py /path/to/repos    # Utilise un chemin spécifique
+  python3 console_repo_explorer.py --config          # Affiche la configuration actuelle
+        """
+    )
     
+    parser.add_argument(
+        'path', 
+        nargs='?', 
+        help='Chemin vers le dossier contenant les repositories Git'
+    )
+    
+    parser.add_argument(
+        '--config', 
+        action='store_true', 
+        help='Affiche la configuration actuelle et quitte'
+    )
+    
+    args = parser.parse_args()
+    
+    # Gérer l'option --config
+    if args.config:
+        config = ConfigManager()
+        print("=== Configuration actuelle ===")
+        print(json.dumps(config.config, indent=2, ensure_ascii=False))
+        print(f"\nFichier de configuration: {os.path.abspath(config.config_file)}")
+        return
+    
+    # Déterminer le chemin à utiliser
+    config = ConfigManager()
+    root_path = args.path or config.get('default_repository_path')
+    
+    # Vérifier que le chemin existe
     if not os.path.exists(root_path):
-        print(f"❌ Erreur: Le chemin {root_path} n'existe pas.")
+        print(f"❌ Erreur: Le chemin '{root_path}' n'existe pas.")
+        print(f"\nSolutions:")
+        print(f"• Vérifiez le chemin dans le fichier config.json")
+        print(f"• Utilisez: python3 {sys.argv[0]} /chemin/vers/vos/repos")
+        print(f"• Éditez manuellement le fichier config.json")
         sys.exit(1)
+    
+    print(f"🚀 Lancement de GitHub Repository Explorer (Console)")
+    print(f"📁 Dossier à explorer: {root_path}")
     
     explorer = ConsoleRepoExplorer(root_path)
     explorer.run()
