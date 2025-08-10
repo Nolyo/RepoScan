@@ -82,8 +82,8 @@ class ConfigManager:
             print(f"Erreur lors du chargement de la config: {e}")
             # Fallback minimal en cas d'erreur
             return {
-                "app_name": "Git Repo Explorer",
-                "shortcut_name": "Git Repo Explorer",
+                "app_name": "RepoScan",
+                "shortcut_name": "RepoScan",
                 "default_repository_path": str(Path.home()),
                 "max_scan_depth": 3,
                 "fetch_timeout_seconds": 30,
@@ -232,10 +232,11 @@ class GitRepoExplorer:
         self.root_path = root_path or self.config.get('default_repository_path')
         self.root = tk.Tk()
         # Dynamic application name from config
-        self.app_name = self.config.get('app_name', 'Git Repo Explorer')
+        self.app_name = self.config.get('app_name', 'RepoScan')
         self.root.title(self.app_name)
         self.root.geometry(self.config.get('gui_window_size', '1400x800'))
         self.root.configure(bg='#f0f0f0')
+        self._set_window_icon()
         
         self.repos = []
         self.filtered_repos = []
@@ -387,6 +388,37 @@ class GitRepoExplorer:
             font=('Segoe UI', 9)
         )
         self.status_label.pack(side='left', padx=10, pady=5)
+
+    def _set_window_icon(self):
+        """Définit l'icône de la fenêtre depuis assets/icons pour la barre des tâches.
+        - Sous Windows natif: utilise le .ico
+        - Sous Linux/WSLg: utilise le .png
+        """
+        try:
+            here = Path(__file__).resolve()
+            icons_dir = here.parent.parent / 'assets' / 'icons'
+            ico_path = icons_dir / 'app_icon.ico'
+            png_path = icons_dir / 'app_icon.png'
+
+            if sys.platform == 'win32' and ico_path.exists():
+                try:
+                    # Sur Windows, iconbitmap attend un .ico
+                    self.root.iconbitmap(default=str(ico_path))
+                    return
+                except Exception:
+                    pass
+
+            # Fallback Linux/WSL: utiliser iconphoto avec PNG
+            if png_path.exists():
+                try:
+                    self._icon_image = tk.PhotoImage(file=str(png_path))
+                    self.root.iconphoto(True, self._icon_image)
+                    return
+                except Exception:
+                    pass
+        except Exception:
+            # Ne pas bloquer l'application si l'icône n'est pas disponible
+            pass
     
     def _find_all_git_repos(self, root_path, current_path="", max_depth=3):
         """Trouve récursivement tous les repositories Git"""
@@ -712,7 +744,7 @@ class GitRepoExplorer:
     def _show_help(self):
         """Affiche une fenêtre d'aide avec la légende"""
         help_window = tk.Toplevel(self.root)
-        help_window.title("Aide - GitHub Repository Explorer")
+        help_window.title("Aide - RepoScan")
         help_window.geometry("800x600")
         help_window.configure(bg='#f8f9fa')
         
@@ -737,7 +769,7 @@ class GitRepoExplorer:
         scrollbar.config(command=help_text.yview)
         
         # Contenu de l'aide
-        help_content = """*** GUIDE D'UTILISATION - GitHub Repository Explorer ***
+        help_content = """*** GUIDE D'UTILISATION - RepoScan ***
 
 >>> STRUCTURE HIERARCHIQUE:
    [DIR] Dossier parent (contient des repositories)
@@ -991,7 +1023,7 @@ class GitRepoExplorer:
             
             # Mettre à jour le titre de la fenêtre
             folder_name = os.path.basename(new_folder)
-            self.root.title(f"GitHub Repository Explorer - {folder_name}")
+            self.root.title(f"RepoScan - {folder_name}")
             
             # Recharger les repositories
             self._load_repositories()
@@ -1007,7 +1039,7 @@ class GitRepoExplorer:
 def main():
     # Parse des arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description="GitHub Repository Explorer - Explore et gère vos repositories Git",
+        description="RepoScan - Explore et gère vos repositories Git",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemples d'utilisation:
@@ -1052,7 +1084,7 @@ Exemples d'utilisation:
         print(f"• Modifiez la configuration avec le bouton 'Changer Dossier' dans l'interface")
         sys.exit(1)
     
-    print(f"🚀 Lancement de GitHub Repository Explorer")
+    print(f"🚀 Lancement de RepoScan")
     print(f"📁 Dossier à explorer: {root_path}")
     
     app = GitRepoExplorer(root_path)

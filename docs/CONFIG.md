@@ -1,4 +1,4 @@
-# 🔧 Configuration - GitHub Repository Explorer
+# 🔧 Configuration - RepoScan
 
 ## 📁 Fichier de configuration
 
@@ -11,8 +11,8 @@ Le fichier `config.json` se trouve dans le dossier `config/config.json` à la ra
 
 ```json
 {
-    "app_name": "Git Repo Explorer",
-    "shortcut_name": "Git Repo Explorer",
+    "app_name": "RepoScan",
+    "shortcut_name": "RepoScan",
     "default_repository_path": "/home/yjaffres/www/kering",
     "max_scan_depth": 3,
     "fetch_timeout_seconds": 30,
@@ -20,7 +20,7 @@ Le fichier `config.json` se trouve dans le dossier `config/config.json` à la ra
     "show_empty_folders": true,
     "windows": {
         "distro": "Ubuntu",
-        "linux_project_path": "/home/USER/www/pytool"
+        "linux_project_path": "/home/USER/www/repo-scan"
     },
     "theme": {
         "clean_repository_color": "#d5f4e6",
@@ -36,8 +36,8 @@ Le fichier `config.json` se trouve dans le dossier `config/config.json` à la ra
 
 | Paramètre | Description | Valeur par défaut |
 |-----------|-------------|-------------------|
-| `app_name` | Nom public de l'application (GUI: titre, Console: bannière) | `"Git Repo Explorer"` |
-| `shortcut_name` | Nom du raccourci Windows généré | `"Git Repo Explorer"` |
+| `app_name` | Nom public de l'application (GUI: titre, Console: bannière) | `"RepoScan"` |
+| `shortcut_name` | Nom du raccourci Windows généré | `"RepoScan"` |
 | `default_repository_path` | Chemin du dossier racine contenant vos repositories Git | `/home/yjaffres/www/kering` |
 | `max_scan_depth` | Profondeur maximale de scan récursif | `3` |
 | `fetch_timeout_seconds` | Timeout en secondes pour les opérations `git fetch` | `30` |
@@ -61,7 +61,7 @@ Le fichier `config.json` se trouve dans le dossier `config/config.json` à la ra
 | Paramètre | Description | Exemple |
 |-----------|-------------|---------|
 | `windows.distro` | Nom de la distribution WSL utilisée par le lanceur Windows | `"Ubuntu"` |
-| `windows.linux_project_path` | Chemin Linux du projet (emplacement de ce repo) utilisé par le lanceur Windows | `"/home/USER/www/pytool"` |
+| `windows.linux_project_path` | Chemin Linux du projet (emplacement de ce repo) utilisé par le lanceur Windows | `"/home/USER/www/repo-scan"` |
 
 ### 1. **Interface graphique** (Recommandée)
 - Lancez l'application GUI

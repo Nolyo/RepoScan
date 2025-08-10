@@ -6,9 +6,9 @@ $ErrorActionPreference = 'SilentlyContinue'
 # Lire la configuration
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ConfigPath = Join-Path $ScriptDir "config.json"
-$AppName = "Git Repo Explorer"
+$AppName = "RepoScan"
 $WSLDistro = "Ubuntu"
-$LinuxProjectPath = "~/www/pytool"
+$LinuxProjectPath = "~/www/repo-scan"
 
 if (Test-Path $ConfigPath) {
     try {

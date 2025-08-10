@@ -15,7 +15,7 @@ fi
 # Vérifier si tkinter est disponible ET si un display est présent (WSLg/Wayland/X11)
 if python3 -c "import tkinter" &>/dev/null; then
     if [ -n "$WAYLAND_DISPLAY" ] || [ -n "$DISPLAY" ]; then
-        echo "🚀 Lancement de GitHub Repository Explorer (Interface Graphique)..."
+        echo "🚀 Lancement de RepoScan (Interface Graphique)..."
         # Lancer en premier-plan pour remonter les erreurs dans le log Windows
         python3 src/github_repo_explorer.py
         exit $?

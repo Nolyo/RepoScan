@@ -1,6 +1,6 @@
 {
-  "app_name": "Git Repo Explorer",
-  "shortcut_name": "Git Repo Explorer",
+  "app_name": "RepoScan",
+  "shortcut_name": "RepoScan",
   "default_repository_path": "/home/nolyo/www",
   "max_scan_depth": 3,
   "fetch_timeout_seconds": 30,
@@ -15,6 +15,6 @@
   },
   "windows": {
     "distro": "Ubuntu",
-    "linux_project_path": "/home/nolyo/www/pytool"
+    "linux_project_path": "/home/nolyo/www/repo-scan"
   }
 }

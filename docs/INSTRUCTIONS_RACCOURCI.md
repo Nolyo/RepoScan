@@ -1,4 +1,4 @@
-# 🖥️ Créer un raccourci bureau pour Kering Repo Explorer
+# 🖥️ Créer un raccourci bureau pour RepoScan
 
 ## 🚀 Méthode Automatique (Recommandée)
 
@@ -25,23 +25,23 @@ cd "
 
 ### Option A : Via l'Explorateur Windows
 1. Ouvrir l'Explorateur Windows
-2. Aller à : `\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\pytool`
+2. Aller à : `\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\repo-scan`
 3. **Double-cliquer** sur `setup_desktop_shortcut.bat`
 
 ### Option B : Créer manuellement
 1. **Clic droit** sur le bureau → **"Nouveau"** → **"Raccourci"**
 2. Dans "Emplacement" :
    ```
-   \\wsl.localhost\Ubuntu\home\yjaffres\www\kering\pytool\launch_kering_explorer.bat
+   \\wsl.localhost\Ubuntu\home\yjaffres\www\kering\repo-scan\launch_kering_explorer.bat
    ```
-3. Nommer le raccourci : **"Kering Repo Explorer"**
+3. Nommer le raccourci : **"RepoScan"**
 4. **Terminer**
 
 ---
 
 ## 🎯 Utilisation du raccourci
 
-Une fois créé, **double-cliquez** sur le raccourci **"Kering Repo Explorer"** sur votre bureau.
+Une fois créé, **double-cliquez** sur le raccourci **"RepoScan"** sur votre bureau.
 
 ### Ce qui va se passer :
 1. ✅ Une fenêtre de terminal s'ouvre
@@ -63,7 +63,7 @@ wsl --list --verbose
 ### Problème : "Fichier non trouvé"
 **Solution :** Vérifiez que les fichiers existent :
 ```cmd
-dir "\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\pytool"
+dir "\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\repo-scan"
 ```
 
 ### Problème : "Permission refusée"
@@ -88,4 +88,4 @@ Vous pouvez **clic droit** → **"Propriétés"** sur le raccourci pour :
 
 ---
 
-**🎉 Profitez de votre GitHub Repository Explorer directement depuis le bureau !**
+**🎉 Profitez de RepoScan directement depuis le bureau !**

@@ -80,8 +80,8 @@ class ConfigManager:
             print(f"Erreur lors du chargement de la config: {e}")
             # Fallback minimal en cas d'erreur
             return {
-                "app_name": "Git Repo Explorer",
-                "shortcut_name": "Git Repo Explorer",
+                "app_name": "RepoScan",
+                "shortcut_name": "RepoScan",
                 "default_repository_path": str(Path.home()),
                 "max_scan_depth": 3,
                 "fetch_timeout_seconds": 30,
@@ -228,7 +228,7 @@ class ConsoleRepoExplorer:
     def __init__(self, root_path=None):
         self.config = ConfigManager()
         self.root_path = root_path or self.config.get('default_repository_path')
-        self.app_name = self.config.get('app_name', 'Git Repo Explorer')
+        self.app_name = self.config.get('app_name', 'RepoScan')
         self.repos = []
         
     def _find_all_git_repos(self, root_path, current_path="", max_depth=None):
@@ -555,7 +555,7 @@ class ConsoleRepoExplorer:
 def main():
     # Parse des arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description="GitHub Repository Explorer (Console) - Explore et gère vos repositories Git",
+        description="RepoScan (Console) - Explore et gère vos repositories Git",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemples d'utilisation:
@@ -600,7 +600,7 @@ Exemples d'utilisation:
         print(f"• Éditez manuellement le fichier config.json")
         sys.exit(1)
     
-    print(f"🚀 Lancement de {config.get('app_name', 'Git Repo Explorer')} (Console)")
+    print(f"🚀 Lancement de {config.get('app_name', 'RepoScan')} (Console)")
     print(f"📁 Dossier à explorer: {root_path}")
     
     explorer = ConsoleRepoExplorer(root_path)

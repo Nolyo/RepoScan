@@ -8,7 +8,7 @@ Write-Host ""
 $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
 
 # Lire le nom de l'application depuis la config si disponible
-$AppName = 'Git Repo Explorer'
+$AppName = 'RepoScan'
 $ShortcutName = $null
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ConfigPath = Join-Path $ScriptDir '..\\..\\config\\config.json'
@@ -93,14 +93,21 @@ if ($SilentMode) {
 }
 
 # Utiliser l'icône du terminal Windows si disponible
-$TerminalIcon = "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe"
-if (Test-Path $TerminalIcon) {
-    $Shortcut.IconLocation = "$TerminalIcon,0"
-    Write-Host "Icone Windows Terminal utilisee" -ForegroundColor Green
+# Utiliser l'icône du projet si disponible, sinon fallback terminal/cmd
+$ProjectIcon = Join-Path $ScriptDir "..\..\assets\icons\app_icon.ico"
+if (Test-Path $ProjectIcon) {
+    $Shortcut.IconLocation = $ProjectIcon
+    Write-Host "Icône de l'application appliquée" -ForegroundColor Green
 } else {
-    # Utiliser l'icône par défaut de cmd
-    $Shortcut.IconLocation = "$env:SystemRoot\System32\cmd.exe,0"
-    Write-Host "Icone cmd utilisee" -ForegroundColor Yellow
+    $TerminalIcon = "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe"
+    if (Test-Path $TerminalIcon) {
+        $Shortcut.IconLocation = "$TerminalIcon,0"
+        Write-Host "Icône Windows Terminal utilisée (fallback)" -ForegroundColor Yellow
+    } else {
+        # Utiliser l'icône par défaut de cmd
+        $Shortcut.IconLocation = "$env:SystemRoot\System32\cmd.exe,0"
+        Write-Host "Icône cmd utilisée (fallback)" -ForegroundColor Yellow
+    }
 }
 
 # Sauvegarder le raccourci

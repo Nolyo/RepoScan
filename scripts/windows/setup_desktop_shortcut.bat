@@ -5,9 +5,9 @@ REM Forcer le changement vers un repertoire Windows pour eviter l'erreur UNC
 cd /d "%TEMP%" >nul 2>&1 || cd /d "%USERPROFILE%" >nul 2>&1 || cd /d "C:\" >nul 2>&1
 
 REM Script pour configurer le raccourci bureau
-REM Git Repo Explorer (nom dynamique via config)
+REM RepoScan (nom dynamique via config)
 
-set "APP_NAME=Git Repo Explorer"
+set "APP_NAME=RepoScan"
 set "SHORTCUT_NAME="
 title Configuration du raccourci - %APP_NAME%
 color 0B
@@ -50,9 +50,9 @@ echo [DEBUG] APP_NAME="%APP_NAME%"
 echo [DEBUG] SHORTCUT_NAME="%SHORTCUT_NAME%"
 echo [DEBUG] Appel de la fonction CleanAppName...
 
-REM Supprimer l'ancien dossier KeringRepoExplorer s'il existe
+REM Nettoyage legacy: dossiers de versions precedentes
 if exist "%LOCALAPPDATA%\KeringRepoExplorer" (
-    echo Suppression de l'ancien dossier KeringRepoExplorer...
+    echo Suppression du dossier legacy KeringRepoExplorer...
     rmdir /s /q "%LOCALAPPDATA%\KeringRepoExplorer" >nul 2>&1
 )
 
@@ -104,6 +104,16 @@ if exist "%SourceConfig%" (
     copy /Y "%SourceConfig%" "%AppFolder%\" >nul 2>&1 & copy /Y "%SourceConfig%" "%AppFolder%\" >> "%LogFile%" 2>>&1
 ) else (
     echo ATTENTION: config.json introuvable a l'emplacement attendu: %SourceConfig% >> "%LogFile%"
+)
+
+REM Copier l'icone de l'application si disponible
+set "SourceIcon=%~dp0..\..\assets\icons\app_icon.ico"
+if exist "%SourceIcon%" (
+    echo Copie de l'icone de l'application (app_icon.ico)
+    copy /Y "%SourceIcon%" "%AppFolder%\app_icon.ico" >nul 2>&1
+    copy /Y "%SourceIcon%" "%AppFolder%\app_icon.ico" >> "%LogFile%" 2>>&1
+) else (
+    echo ATTENTION: app_icon.ico introuvable a l'emplacement attendu: %SourceIcon% >> "%LogFile%"
 )
 
 REM (Ancien support win_config.json supprime)
@@ -166,7 +176,8 @@ if "%SilentMode%"=="true" (
 
 echo $Shortcut.WorkingDirectory = '%AppFolder%'>>"%TmpPs1%"
 echo $Shortcut.Description = '%APP_NAME%'>>"%TmpPs1%"
-echo $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,4" >>"%TmpPs1%"
+echo $iconPath = Join-Path '%AppFolder%' 'app_icon.ico'>>"%TmpPs1%"
+echo if (Test-Path -LiteralPath $iconPath) { $Shortcut.IconLocation = $iconPath } else { $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,4" }>>"%TmpPs1%"
 echo $Shortcut.Save()>>"%TmpPs1%"
 
 if not exist "%TmpPs1%" (
@@ -193,9 +204,9 @@ REM Fallback: si le raccourci n'existe pas, reessayer via -Command inline
 if not exist "%ShortcutPath%" (
     echo Fallback: tentative creation inline PowerShell >> "%LogFile%"
     if "%SilentMode%"=="true" (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-WindowStyle Hidden -ExecutionPolicy Bypass -File \"%AppFolder%\launch_kering_explorer_silent.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.WindowStyle=7; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-WindowStyle Hidden -ExecutionPolicy Bypass -File \"%AppFolder%\launch_kering_explorer_silent.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation='%AppFolder%\app_icon.ico'; $sc.WindowStyle=7; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
     ) else (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-ExecutionPolicy Bypass -File \"%AppFolder%\launch_with_feedback.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-ExecutionPolicy Bypass -File \"%AppFolder%\launch_with_feedback.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation='%AppFolder%\app_icon.ico'; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
     )
 )
 
@@ -224,4 +235,4 @@ if exist "%ShortcutPath%" (
 )
 
 echo Appuyez sur une touche pour fermer...
-pause >nul
+pause >nul

@@ -1,4 +1,4 @@
-# GitHub Repository Explorer
+# RepoScan
 
 Une application pour explorer et analyser les repositories GitHub dans le répertoire défini dans votre configuration.
 
@@ -14,7 +14,7 @@ Vous avez **2 options** pour utiliser l'application :
 
 1. **Depuis WSL/Ubuntu**, naviguez vers le projet :
    ```bash
-   cd /chemin/vers/pytool
+   cd /chemin/vers/repo-scan
    ```
 
 2. **Lancez le script d'installation** :
@@ -23,7 +23,7 @@ Vous avez **2 options** pour utiliser l'application :
    ./scripts/windows/setup_desktop_shortcut.bat
    
    # Ou depuis Windows (pour éviter l'erreur UNC)
-   # 1. Ouvrez l'explorateur Windows : \\wsl.localhost\Ubuntu\home\USER\www\pytool
+    # 1. Ouvrez l'explorateur Windows : \\wsl.localhost\Ubuntu\home\USER\www\repo-scan
    # 2. Naviguez vers scripts\windows
    # 3. Double-cliquez sur setup_desktop_shortcut.bat
    
@@ -85,7 +85,7 @@ Au premier lancement, l'application crée automatiquement `config/config.json` d
   },
   "windows": {
     "distro": "Ubuntu",
-    "linux_project_path": "/home/USER/www/pytool"
+    "linux_project_path": "/home/USER/www/repo-scan"
   }
 }
 ```
@@ -203,7 +203,7 @@ sudo dnf install python3-tkinter
 ## Architecture du projet
 
 ```
-pytool/
+repo-scan/
 ├── config/
 │   ├── config.json          # Configuration principale (auto-créée)
 │   └── config.example.json  # Template de configuration
