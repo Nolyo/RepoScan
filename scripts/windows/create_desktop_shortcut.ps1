@@ -47,6 +47,23 @@ Write-Host "Raccourci: $ShortcutPath" -ForegroundColor Cyan
 Write-Host "Script batch: $BatchPath" -ForegroundColor Cyan
 Write-Host ""
 
+# Demander le type de lancement
+Write-Host "Choisissez le mode de lancement:" -ForegroundColor Yellow
+Write-Host "1. Standard (console visible 3 secondes)" -ForegroundColor White
+Write-Host "2. Silencieux (aucune console)" -ForegroundColor White
+$Choice = Read-Host "Votre choix (1 ou 2)"
+
+$SilentMode = $false
+$TargetPath = $BatchPath
+if ($Choice -eq "2") {
+    $SilentMode = $true
+    $SilentScriptPath = Join-Path $ScriptDir "launch_kering_explorer_silent.ps1"
+    $TargetPath = "powershell.exe"
+    $Arguments = "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$SilentScriptPath`""
+    Write-Host "Mode silencieux sélectionné" -ForegroundColor Green
+    Write-Host ""
+}
+
 # Vérifier que le fichier batch existe
 if (-not (Test-Path $BatchPath)) {
     Write-Host "ERREUR: Le fichier batch n'existe pas!" -ForegroundColor Red
@@ -63,11 +80,17 @@ if (-not (Test-Path $BatchPath)) {
 $WshShell = New-Object -comObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
 
-# Configurer le raccourci
-$Shortcut.TargetPath = $BatchPath
+# Configurer le raccourci selon le mode choisi
+$Shortcut.TargetPath = $TargetPath
 $Shortcut.WorkingDirectory = $WorkingDirectory
 $Shortcut.Description = $AppName
-$Shortcut.WindowStyle = 1  # Fenêtre normale
+
+if ($SilentMode) {
+    $Shortcut.Arguments = $Arguments
+    $Shortcut.WindowStyle = 7  # Fenêtre minimisée (pour PowerShell)
+} else {
+    $Shortcut.WindowStyle = 1  # Fenêtre normale
+}
 
 # Utiliser l'icône du terminal Windows si disponible
 $TerminalIcon = "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe"

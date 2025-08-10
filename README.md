@@ -22,6 +22,11 @@ Vous avez **2 options** pour utiliser l'application :
    # Via WSL (recommandé)
    ./scripts/windows/setup_desktop_shortcut.bat
    
+   # Ou depuis Windows (pour éviter l'erreur UNC)
+   # 1. Ouvrez l'explorateur Windows : \\wsl.localhost\Ubuntu\home\USER\www\pytool
+   # 2. Naviguez vers scripts\windows
+   # 3. Double-cliquez sur setup_desktop_shortcut.bat
+   
    # Ou via PowerShell depuis Windows
    powershell -ExecutionPolicy Bypass ./scripts/windows/create_desktop_shortcut.ps1
    ```

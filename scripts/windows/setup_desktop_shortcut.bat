@@ -1,5 +1,9 @@
 @echo off
 setlocal ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
+
+REM Forcer le changement vers un repertoire Windows pour eviter l'erreur UNC
+cd /d "%TEMP%" >nul 2>&1 || cd /d "%USERPROFILE%" >nul 2>&1 || cd /d "C:\" >nul 2>&1
+
 REM Script pour configurer le raccourci bureau
 REM Git Repo Explorer (nom dynamique via config)
 
@@ -13,6 +17,8 @@ echo    Configuration du raccourci bureau
 echo    %APP_NAME%
 echo ================================================
 echo.
+
+echo [DEBUG] Chargement de la config...
 
 REM Charger le nom depuis la config centrale si presente
 set "SourceConfig=%~dp0..\..\config\config.json"
@@ -40,8 +46,21 @@ if exist "%SourceConfig%" (
 
 if "%SHORTCUT_NAME%"=="" set "SHORTCUT_NAME=%APP_NAME%"
 
-REM Créer le dossier dans AppData si nécessaire
-set "AppFolder=%LOCALAPPDATA%\KeringRepoExplorer"
+echo [DEBUG] APP_NAME="%APP_NAME%"
+echo [DEBUG] SHORTCUT_NAME="%SHORTCUT_NAME%"
+echo [DEBUG] Appel de la fonction CleanAppName...
+
+REM Supprimer l'ancien dossier KeringRepoExplorer s'il existe
+if exist "%LOCALAPPDATA%\KeringRepoExplorer" (
+    echo Suppression de l'ancien dossier KeringRepoExplorer...
+    rmdir /s /q "%LOCALAPPDATA%\KeringRepoExplorer" >nul 2>&1
+)
+
+REM Simple : remplacer les espaces par des underscores pour le nom de dossier
+set "CleanAppName=%APP_NAME: =_%"
+echo [DEBUG] CleanAppName="%CleanAppName%"
+set "AppFolder=%LOCALAPPDATA%\%CleanAppName%"
+echo [DEBUG] AppFolder="%AppFolder%"
 set "LogFile=%AppFolder%\setup.log"
 REM Resoudre dynamiquement le dossier Bureau (compatible OneDrive/redirect)
 for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DesktopDir=%%D"
@@ -60,8 +79,11 @@ echo Nom raccourci        : %SHORTCUT_NAME% >> "%LogFile%"
 echo Raccourci cible      : %ShortcutPath% >> "%LogFile%"
 
 REM Copier le script batch depuis le dossier courant du script
-echo Copie du lanceur
-copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >nul 2>&1 & copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >> "%LogFile%" 2>>&1
+echo Copie du lanceur (ecrasement force)
+del /Q "%AppFolder%\launch_kering_explorer.bat" >nul 2>&1
+copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >nul 2>&1
+echo Verification de la copie >> "%LogFile%"
+copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >> "%LogFile%" 2>>&1
 IF NOT EXIST "%AppFolder%\launch_kering_explorer.bat" (
     echo.
     echo ERREUR: Impossible de copier le fichier depuis WSL
@@ -86,7 +108,34 @@ if exist "%SourceConfig%" (
 
 REM (Ancien support win_config.json supprime)
 
-REM Créer le raccourci sur le bureau avec PowerShell
+REM Demander le mode de lancement
+echo.
+echo Choisissez le mode de lancement:
+echo 1. Standard (console visible 3 secondes)
+echo 2. Silencieux (aucune console)
+set /p "LaunchMode=Votre choix (1 ou 2): "
+
+if "%LaunchMode%"=="2" (
+    set "SilentMode=true"
+    echo Mode silencieux selectionne
+) else (
+    set "SilentMode=false"
+    echo Mode standard selectionne
+)
+echo.
+
+REM Copier le script silencieux si n�cessaire
+if "%SilentMode%"=="true" (
+    echo Copie du lanceur silencieux
+    copy /Y "%~dp0launch_kering_explorer_silent.ps1" "%AppFolder%\" >nul 2>&1
+    if not exist "%AppFolder%\launch_kering_explorer_silent.ps1" (
+        echo ERREUR: Impossible de copier le script silencieux
+        set "SilentMode=false"
+        echo Utilisation du mode standard par defaut
+    )
+)
+
+REM Cr�er le raccourci sur le bureau avec PowerShell
 echo Creation du raccourci sur le bureau
 echo Generation du script PowerShell temporaire >> "%LogFile%"
 set "TmpPs1=%TEMP%\kering_create_shortcut.ps1"
@@ -97,7 +146,24 @@ echo $desktop = [Environment]::GetFolderPath('Desktop')>>"%TmpPs1%"
 echo if (-not (Test-Path -LiteralPath $desktop)) { throw "Desktop folder not found: $desktop" }>>"%TmpPs1%"
 echo $lnkPath = Join-Path $desktop '%SHORTCUT_NAME%.lnk'>>"%TmpPs1%"
 echo $Shortcut = $WshShell.CreateShortcut($lnkPath)>>"%TmpPs1%"
-echo $Shortcut.TargetPath = '%AppFolder%\launch_kering_explorer.bat'>>"%TmpPs1%"
+
+if "%SilentMode%"=="true" (
+    echo $Shortcut.TargetPath = 'powershell.exe'>>"%TmpPs1%"
+    echo $Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File "%AppFolder%\launch_kering_explorer_silent.ps1"'>>"%TmpPs1%"
+    echo $Shortcut.WindowStyle = 7>>"%TmpPs1%"
+) else (
+    REM Mode standard : creer un script PowerShell intermediaire pour eviter les problemes de guillemets
+    set "LauncherPs1=%AppFolder%\launch_with_feedback.ps1"
+    echo Write-Host "Lancement de %APP_NAME%..." > "%AppFolder%\launch_with_feedback.ps1"
+    echo Start-Process -FilePath "%AppFolder%\launch_kering_explorer.bat" -WindowStyle Hidden >> "%AppFolder%\launch_with_feedback.ps1"
+    echo Write-Host "Application lancee en arriere-plan" >> "%AppFolder%\launch_with_feedback.ps1"
+    echo Start-Sleep -Seconds 3 >> "%AppFolder%\launch_with_feedback.ps1"
+    echo Write-Host "Fermeture automatique..." >> "%AppFolder%\launch_with_feedback.ps1"
+    echo $Shortcut.TargetPath = 'powershell.exe'>>"%TmpPs1%"
+    echo $Shortcut.Arguments = '-ExecutionPolicy Bypass -File "%AppFolder%\launch_with_feedback.ps1"'>>"%TmpPs1%"
+    echo $Shortcut.WindowStyle = 1>>"%TmpPs1%"
+)
+
 echo $Shortcut.WorkingDirectory = '%AppFolder%'>>"%TmpPs1%"
 echo $Shortcut.Description = '%APP_NAME%'>>"%TmpPs1%"
 echo $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,4" >>"%TmpPs1%"
@@ -126,7 +192,11 @@ del /Q "%TmpPs1%" >nul 2>&1
 REM Fallback: si le raccourci n'existe pas, reessayer via -Command inline
 if not exist "%ShortcutPath%" (
     echo Fallback: tentative creation inline PowerShell >> "%LogFile%"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='%AppFolder%\launch_kering_explorer.bat'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+    if "%SilentMode%"=="true" (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-WindowStyle Hidden -ExecutionPolicy Bypass -File \"%AppFolder%\launch_kering_explorer_silent.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.WindowStyle=7; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+    ) else (
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-ExecutionPolicy Bypass -File \"%AppFolder%\launch_with_feedback.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+    )
 )
 
 if exist "%ShortcutPath%" (
@@ -154,4 +224,4 @@ if exist "%ShortcutPath%" (
 )
 
 echo Appuyez sur une touche pour fermer...
-pause >nul
+pause >nul
