@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Se placer dans le répertoire du script pour que les chemins relatifs fonctionnent
-cd "$(dirname "$0")" || exit
+# Localiser les dossiers du projet
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && cd .. && pwd)"
+# Se placer à la racine du projet
+cd "$PROJECT_ROOT" || exit 1
 
 # Vérifier si Python3 est installé
 if ! command -v python3 &> /dev/null; then
@@ -14,7 +17,7 @@ if python3 -c "import tkinter" &>/dev/null; then
     if [ -n "$WAYLAND_DISPLAY" ] || [ -n "$DISPLAY" ]; then
         echo "🚀 Lancement de GitHub Repository Explorer (Interface Graphique)..."
         # Lancer en premier-plan pour remonter les erreurs dans le log Windows
-        python3 github_repo_explorer.py
+        python3 src/github_repo_explorer.py
         exit $?
     else
         echo "⚠️  Aucun display graphique détecté (WSLg/Wayland/X11 absent)."
@@ -26,4 +29,4 @@ else
     echo ""
 fi
 
-python3 console_repo_explorer.py
+python3 src/console_repo_explorer.py

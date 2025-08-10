@@ -1,4 +1,6 @@
 {
+  "app_name": "Git Repo Explorer",
+  "shortcut_name": "Git Repo Explorer",
   "default_repository_path": "/home/nolyo/www",
   "max_scan_depth": 3,
   "fetch_timeout_seconds": 30,

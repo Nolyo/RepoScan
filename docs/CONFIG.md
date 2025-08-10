@@ -5,17 +5,23 @@
 L'application utilise un fichier `config.json` pour stocker ses paramètres. Ce fichier est créé automatiquement au premier lancement avec les valeurs par défaut.
 
 ### 📍 Localisation
-Le fichier `config.json` se trouve dans le même dossier que les scripts Python.
+Le fichier `config.json` se trouve dans le dossier `config/config.json` à la racine du projet.
 
 ## ⚙️ Structure de la configuration
 
 ```json
 {
+    "app_name": "Git Repo Explorer",
+    "shortcut_name": "Git Repo Explorer",
     "default_repository_path": "/home/yjaffres/www/kering",
     "max_scan_depth": 3,
     "fetch_timeout_seconds": 30,
     "gui_window_size": "1400x800",
     "show_empty_folders": true,
+    "windows": {
+        "distro": "Ubuntu",
+        "linux_project_path": "/home/USER/www/pytool"
+    },
     "theme": {
         "clean_repository_color": "#d5f4e6",
         "modified_repository_color": "#ffeaa7",
@@ -30,6 +36,8 @@ Le fichier `config.json` se trouve dans le même dossier que les scripts Python.
 
 | Paramètre | Description | Valeur par défaut |
 |-----------|-------------|-------------------|
+| `app_name` | Nom public de l'application (GUI: titre, Console: bannière) | `"Git Repo Explorer"` |
+| `shortcut_name` | Nom du raccourci Windows généré | `"Git Repo Explorer"` |
 | `default_repository_path` | Chemin du dossier racine contenant vos repositories Git | `/home/yjaffres/www/kering` |
 | `max_scan_depth` | Profondeur maximale de scan récursif | `3` |
 | `fetch_timeout_seconds` | Timeout en secondes pour les opérations `git fetch` | `30` |
@@ -47,6 +55,13 @@ Le fichier `config.json` se trouve dans le même dossier que les scripts Python.
 | `status_background` | Couleur de fond barre de statut | `#34495e` (gris foncé) |
 
 ## 🚀 Méthodes de configuration
+
+### 🪟 Paramètres Windows
+
+| Paramètre | Description | Exemple |
+|-----------|-------------|---------|
+| `windows.distro` | Nom de la distribution WSL utilisée par le lanceur Windows | `"Ubuntu"` |
+| `windows.linux_project_path` | Chemin Linux du projet (emplacement de ce repo) utilisé par le lanceur Windows | `"/home/USER/www/pytool"` |
 
 ### 1. **Interface graphique** (Recommandée)
 - Lancez l'application GUI

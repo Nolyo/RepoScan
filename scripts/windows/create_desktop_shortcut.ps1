@@ -1,12 +1,40 @@
 # Script PowerShell pour créer un raccourci sur le bureau
-# GitHub Repository Explorer - Kering
+# Raccourci de l'application (nom dynamique via config)
 
 Write-Host "=== Creation du raccourci bureau ===" -ForegroundColor Green
 Write-Host ""
 
 # Chemins
 $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
-$ShortcutPath = Join-Path $DesktopPath "Kering Repo Explorer.lnk"
+
+# Lire le nom de l'application depuis la config si disponible
+$AppName = 'Git Repo Explorer'
+$ShortcutName = $null
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ConfigPath = Join-Path $ScriptDir '..\\..\\config\\config.json'
+$ExampleConfigPath = Join-Path $ScriptDir '..\\..\\config\\config.example.json'
+
+# Créer config.json depuis config.example.json s'il n'existe pas
+if (-not (Test-Path $ConfigPath) -and (Test-Path $ExampleConfigPath)) {
+    try {
+        Write-Host "Création de la configuration depuis config.example.json" -ForegroundColor Yellow
+        Copy-Item $ExampleConfigPath $ConfigPath
+        Write-Host "Configuration créée avec succès" -ForegroundColor Green
+    } catch {
+        Write-Host "ERREUR: Impossible de créer config.json - $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+if (Test-Path $ConfigPath) {
+    try {
+        $cfg = Get-Content -Raw $ConfigPath | ConvertFrom-Json
+        if ($cfg.app_name) { $AppName = [string]$cfg.app_name }
+        if ($cfg.shortcut_name) { $ShortcutName = [string]$cfg.shortcut_name }
+    } catch {}
+}
+if (-not $ShortcutName -or $ShortcutName.Trim() -eq '') { $ShortcutName = $AppName }
+
+$ShortcutPath = Join-Path $DesktopPath ("{0}.lnk" -f $ShortcutName)
 
 # Utiliser le dossier où se trouve ce script (compatible lorsqu'il est lancé depuis le partage UNC WSL)
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -14,6 +42,7 @@ $BatchPath = Join-Path $ScriptDir "launch_kering_explorer.bat"
 $WorkingDirectory = $ScriptDir
 
 Write-Host "Bureau detecte: $DesktopPath" -ForegroundColor Cyan
+Write-Host "Application: $AppName" -ForegroundColor Cyan
 Write-Host "Raccourci: $ShortcutPath" -ForegroundColor Cyan
 Write-Host "Script batch: $BatchPath" -ForegroundColor Cyan
 Write-Host ""
@@ -37,7 +66,7 @@ $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
 # Configurer le raccourci
 $Shortcut.TargetPath = $BatchPath
 $Shortcut.WorkingDirectory = $WorkingDirectory
-$Shortcut.Description = "GitHub Repository Explorer - Kering Projects"
+$Shortcut.Description = $AppName
 $Shortcut.WindowStyle = 1  # Fenêtre normale
 
 # Utiliser l'icône du terminal Windows si disponible
@@ -56,10 +85,10 @@ try {
     $Shortcut.Save()
     Write-Host ""
     Write-Host "SUCCESS: Raccourci cree sur le bureau!" -ForegroundColor Green
-    Write-Host "Nom: Kering Repo Explorer.lnk" -ForegroundColor Green
+    Write-Host ("Nom: {0}.lnk" -f $ShortcutName) -ForegroundColor Green
     Write-Host ""
     Write-Host "Vous pouvez maintenant double-cliquer sur le raccourci" -ForegroundColor Cyan
-    Write-Host "pour lancer GitHub Repository Explorer!" -ForegroundColor Cyan
+    Write-Host ("pour lancer {0}!" -f $AppName) -ForegroundColor Cyan
 } catch {
     Write-Host ""
     Write-Host "ERREUR: Impossible de creer le raccourci" -ForegroundColor Red

@@ -1,16 +1,44 @@
 @echo off
 setlocal ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
 REM Script pour configurer le raccourci bureau
-REM GitHub Repository Explorer - Kering
+REM Git Repo Explorer (nom dynamique via config)
 
-title Configuration du raccourci - Kering Repo Explorer
+set "APP_NAME=Git Repo Explorer"
+set "SHORTCUT_NAME="
+title Configuration du raccourci - %APP_NAME%
 color 0B
 echo.
 echo ================================================
 echo    Configuration du raccourci bureau
-echo    GitHub Repository Explorer - Kering
+echo    %APP_NAME%
 echo ================================================
 echo.
+
+REM Charger le nom depuis la config centrale si presente
+set "SourceConfig=%~dp0..\..\config\config.json"
+set "ExampleConfig=%~dp0..\..\config\config.example.json"
+
+REM Creer config.json depuis config.example.json s'il n'existe pas
+if not exist "%SourceConfig%" (
+    if exist "%ExampleConfig%" (
+        echo Creation de la configuration depuis config.example.json
+        copy /Y "%ExampleConfig%" "%SourceConfig%" >nul
+        if exist "%SourceConfig%" (
+            echo Configuration creee avec succes
+        ) else (
+            echo ERREUR: Impossible de creer config.json
+        )
+    ) else (
+        echo ERREUR: config.example.json introuvable
+    )
+)
+
+if exist "%SourceConfig%" (
+    for /f "usebackq tokens=* delims=" %%I in (`powershell -NoProfile -Command "try{(Get-Content -Raw '%SourceConfig%' | ConvertFrom-Json).app_name}catch{''}"`) do if not "%%I"=="" set "APP_NAME=%%I"
+    for /f "usebackq tokens=* delims=" %%I in (`powershell -NoProfile -Command "try{(Get-Content -Raw '%SourceConfig%' | ConvertFrom-Json).shortcut_name}catch{''}"`) do if not "%%I"=="" set "SHORTCUT_NAME=%%I"
+)
+
+if "%SHORTCUT_NAME%"=="" set "SHORTCUT_NAME=%APP_NAME%"
 
 REM Créer le dossier dans AppData si nécessaire
 set "AppFolder=%LOCALAPPDATA%\KeringRepoExplorer"
@@ -18,7 +46,7 @@ set "LogFile=%AppFolder%\setup.log"
 REM Resoudre dynamiquement le dossier Bureau (compatible OneDrive/redirect)
 for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DesktopDir=%%D"
 if not defined DesktopDir set "DesktopDir=%USERPROFILE%\Desktop"
-set "ShortcutPath=%DesktopDir%\Kering Repo Explorer.lnk"
+set "ShortcutPath=%DesktopDir%\%SHORTCUT_NAME%.lnk"
 if not exist "%AppFolder%" (
     echo Creation du dossier application...
     mkdir "%AppFolder%"
@@ -27,6 +55,8 @@ if not exist "%AppFolder%" (
 echo [%DATE% %TIME%] Debut installation > "%LogFile%"
 echo Script lance depuis : %~dp0 >> "%LogFile%"
 echo Dossier application  : %AppFolder% >> "%LogFile%"
+echo Nom application      : %APP_NAME% >> "%LogFile%"
+echo Nom raccourci        : %SHORTCUT_NAME% >> "%LogFile%"
 echo Raccourci cible      : %ShortcutPath% >> "%LogFile%"
 
 REM Copier le script batch depuis le dossier courant du script
@@ -46,10 +76,12 @@ IF NOT EXIST "%AppFolder%\launch_kering_explorer.bat" (
     exit /b 1
 )
 
-REM Copier la configuration centralisee si presente (config.json)
-if exist "%~dp0config.json" (
+REM Copier la configuration centralisee si presente (config/config.json)
+if exist "%SourceConfig%" (
     echo Copie de la configuration (config.json)
-    copy /Y "%~dp0config.json" "%AppFolder%\" >nul 2>&1 & copy /Y "%~dp0config.json" "%AppFolder%\" >> "%LogFile%" 2>>&1
+    copy /Y "%SourceConfig%" "%AppFolder%\" >nul 2>&1 & copy /Y "%SourceConfig%" "%AppFolder%\" >> "%LogFile%" 2>>&1
+) else (
+    echo ATTENTION: config.json introuvable a l'emplacement attendu: %SourceConfig% >> "%LogFile%"
 )
 
 REM (Ancien support win_config.json supprime)
@@ -63,11 +95,11 @@ echo $ErrorActionPreference = 'Stop'>>"%TmpPs1%"
 echo $WshShell = New-Object -ComObject WScript.Shell>>"%TmpPs1%"
 echo $desktop = [Environment]::GetFolderPath('Desktop')>>"%TmpPs1%"
 echo if (-not (Test-Path -LiteralPath $desktop)) { throw "Desktop folder not found: $desktop" }>>"%TmpPs1%"
-echo $lnkPath = Join-Path $desktop 'Kering Repo Explorer.lnk'>>"%TmpPs1%"
+echo $lnkPath = Join-Path $desktop '%SHORTCUT_NAME%.lnk'>>"%TmpPs1%"
 echo $Shortcut = $WshShell.CreateShortcut($lnkPath)>>"%TmpPs1%"
 echo $Shortcut.TargetPath = '%AppFolder%\launch_kering_explorer.bat'>>"%TmpPs1%"
 echo $Shortcut.WorkingDirectory = '%AppFolder%'>>"%TmpPs1%"
-echo $Shortcut.Description = 'GitHub Repository Explorer - Kering Projects'>>"%TmpPs1%"
+echo $Shortcut.Description = '%APP_NAME%'>>"%TmpPs1%"
 echo $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,4" >>"%TmpPs1%"
 echo $Shortcut.Save()>>"%TmpPs1%"
 
@@ -94,7 +126,7 @@ del /Q "%TmpPs1%" >nul 2>&1
 REM Fallback: si le raccourci n'existe pas, reessayer via -Command inline
 if not exist "%ShortcutPath%" (
     echo Fallback: tentative creation inline PowerShell >> "%LogFile%"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop 'Kering Repo Explorer.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='%AppFolder%\launch_kering_explorer.bat'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='GitHub Repository Explorer - Kering Projects'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='%AppFolder%\launch_kering_explorer.bat'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
 )
 
 if exist "%ShortcutPath%" (
@@ -103,7 +135,7 @@ if exist "%ShortcutPath%" (
     echo            INSTALLATION REUSSIE!
     echo ================================================
     echo.
-    echo Le raccourci "Kering Repo Explorer" a ete cree
+    echo Le raccourci "%SHORTCUT_NAME%" a ete cree
     echo sur votre bureau.
     echo.
     echo Double-cliquez dessus pour lancer l'application!
