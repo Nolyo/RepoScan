@@ -1,33 +1,83 @@
-# GitHub Repository Explorer - Kering
+# GitHub Repository Explorer
 
-Une application pour explorer et analyser les repositories GitHub dans le répertoire défini dans votre configuration (`config.json` → `default_repository_path`).
+Une application pour explorer et analyser les repositories GitHub dans le répertoire défini dans votre configuration.
 
-## Fonctionnalités
+## 🚀 Comment utiliser l'application
 
-- 📁 **Scan récursif** des dossiers jusqu'à 3 niveaux de profondeur
-- 📂 **Détecte automatiquement tous les repositories Git** (même imbriqués)
-- 🌿 **Affiche la branche actuelle** de chaque repository
-- 💬 **Montre le dernier commit** avec son message
-- 📊 **Indique le statut** (modifications, fichiers ajoutés, non trackés)
-- ↕️ **Affiche la synchronisation** avec l'origin (commits en avance/retard)
-- 🌐 **Montre le nom du repository remote**
-- 🔍 **Fonction de recherche** (interface graphique uniquement)
-- 🏗️ **Affichage hiérarchique** avec indentation pour les repositories imbriqués
+> **⚠️ Configuration personnalisée** : Par défaut, l'application utilise `config/config.example.json` pour créer automatiquement la configuration. Si vous voulez personnaliser les chemins ou autres paramètres, copiez d'abord `config/config.example.json` vers `config/config.json` et modifiez les valeurs avant l'installation. [Voir section Configuration](#configuration) ⬇️
+
+Vous avez **2 options** pour utiliser l'application :
+
+### Option 1 : Raccourci Windows (recommandé)
+
+**Idéal pour un usage quotidien** - Créez un raccourci bureau pour lancer l'app d'un double-clic :
+
+1. **Depuis WSL/Ubuntu**, naviguez vers le projet :
+   ```bash
+   cd /chemin/vers/pytool
+   ```
+
+2. **Lancez le script d'installation** :
+   ```bash
+   # Via WSL (recommandé)
+   ./scripts/windows/setup_desktop_shortcut.bat
+   
+   # Ou via PowerShell depuis Windows
+   powershell -ExecutionPolicy Bypass ./scripts/windows/create_desktop_shortcut.ps1
+   ```
+
+3. **Double-cliquez sur le raccourci** créé sur votre bureau
+
+### Option 2 : Lancement direct en ligne de commande
+
+**Idéal pour développement/test** - Lancez directement depuis le terminal :
+
+```bash
+# Lancement automatique (détecte GUI/console)
+./scripts/linux/launch_explorer.sh
+
+# Interface graphique directe
+python3 src/github_repo_explorer.py
+
+# Interface console directe  
+python3 src/console_repo_explorer.py
+
+# Avec un chemin spécifique
+python3 src/console_repo_explorer.py /chemin/vers/repositories
+
+# Afficher la configuration actuelle
+python3 src/console_repo_explorer.py --config
+```
+
+> **💡 Les deux options sont indépendantes** - vous pouvez utiliser l'une, l'autre, ou les deux selon vos besoins !
+
 
 ## Configuration
 
-Cette application utilise un seul fichier de configuration: `config.json`.
+### Configuration automatique
 
-Clés principales:
-- `default_repository_path` (Linux/WSL): chemin racine contenant vos repositories à scanner
-- `max_scan_depth`, `fetch_timeout_seconds`, `gui_window_size`, `show_empty_folders`, `theme`
-- `windows.distro`: nom de la distribution WSL (ex: `Ubuntu`)
-- `windows.linux_project_path`: chemin Linux du projet (emplacement de ce repo) utilisé par le lanceur Windows
+Au premier lancement, l'application crée automatiquement `config/config.json` depuis `config/config.example.json`.
 
-Exemple minimal:
+### Personnalisation
+
+Éditez `config/config.json` pour personnaliser :
+
 ```json
 {
-  "default_repository_path": "/home/USER/www/kering",
+  "app_name": "Mon Explorer Git",
+  "shortcut_name": "Git Explorer",
+  "default_repository_path": "/home/USER/www",
+  "max_scan_depth": 3,
+  "fetch_timeout_seconds": 30,
+  "gui_window_size": "1400x1000",
+  "show_empty_folders": true,
+  "theme": {
+    "clean_repository_color": "#d5f4e6",
+    "modified_repository_color": "#ffeaa7",
+    "title_background": "#2c3e50",
+    "search_background": "#ecf0f1",
+    "status_background": "#34495e"
+  },
   "windows": {
     "distro": "Ubuntu",
     "linux_project_path": "/home/USER/www/pytool"
@@ -35,28 +85,23 @@ Exemple minimal:
 }
 ```
 
-## Utilisation
+**Clés principales :**
+- `app_name` : Nom affiché dans le titre de l'application
+- `shortcut_name` : Nom du raccourci bureau (si différent de app_name)
+- `default_repository_path` : Chemin racine contenant vos repositories à scanner
+- `windows.distro` : Nom de la distribution WSL (ex: `Ubuntu`)
+- `windows.linux_project_path` : Chemin Linux du projet utilisé par le lanceur Windows
+
+## Utilisation détaillée
 
 ### Lancement automatique
 ```bash
-./launch_explorer.sh
+./scripts/linux/launch_explorer.sh
 ```
 
 Le script détecte automatiquement si tkinter est disponible :
 - ✅ Si tkinter est installé → Interface graphique
 - ⚠️ Si tkinter n'est pas disponible → Interface console
-
-### Lancement manuel
-
-#### Interface graphique (nécessite tkinter)
-```bash
-python3 github_repo_explorer.py
-```
-
-#### Interface console
-```bash
-python3 console_repo_explorer.py
-```
 
 ### Ouverture de dossiers
 
@@ -94,6 +139,19 @@ sudo yum install tkinter
 # ou
 sudo dnf install python3-tkinter
 ```
+
+## Fonctionnalités
+
+- 📁 **Scan récursif** des dossiers jusqu'à 3 niveaux de profondeur
+- 📂 **Détecte automatiquement tous les repositories Git** (même imbriqués)
+- 🌿 **Affiche la branche actuelle** de chaque repository
+- 💬 **Montre le dernier commit** avec son message
+- 📊 **Indique le statut** (modifications, fichiers ajoutés, non trackés)
+- ↕️ **Affiche la synchronisation** avec l'origin (commits en avance/retard)
+- 🌐 **Montre le nom du repository remote**
+- 🔍 **Fonction de recherche** (interface graphique uniquement)
+- 🏗️ **Affichage hiérarchique** avec indentation pour les repositories imbriqués
+- ✨ **Nom d'application configurable** (changez le titre et nom du raccourci)
 
 ## Interface graphique
 
@@ -137,22 +195,45 @@ sudo dnf install python3-tkinter
 | Sync | Synchronisation avec origin (↑ en avance, ↓ en retard) |
 | Remote | Nom du repository distant |
 
+## Architecture du projet
+
+```
+pytool/
+├── config/
+│   ├── config.json          # Configuration principale (auto-créée)
+│   └── config.example.json  # Template de configuration
+├── docs/
+│   ├── CONFIG.md            # Documentation de configuration
+│   └── INSTRUCTIONS_RACCOURCI.md
+├── scripts/
+│   ├── linux/
+│   │   └── launch_explorer.sh      # Lanceur Linux/WSL
+│   └── windows/
+│       ├── create_desktop_shortcut.ps1
+│       ├── launch_kering_explorer.bat
+│       └── setup_desktop_shortcut.bat
+├── src/
+│   ├── github_repo_explorer.py     # Interface graphique
+│   └── console_repo_explorer.py    # Interface console
+└── README.md
+```
+
 ## Exigences
 
 - Python 3.6+
 - Git installé
 - tkinter (optionnel, pour l'interface graphique)
-- Accès au répertoire défini dans `config.json` (`default_repository_path`)
+- WSL avec Ubuntu (pour utilisation Windows)
 
 ## Dépannage
 
 ### "ModuleNotFoundError: No module named 'tkinter'"
-Installez tkinter avec votre gestionnaire de paquets système (voir ci-dessus).
+Installez tkinter avec votre gestionnaire de paquets système ([voir les commandes d'installation](#installation-de-tkinter-pour-linterface-graphique)).
 
 ### "Permission denied"
 Assurez-vous que le script de lancement est exécutable :
 ```bash
-chmod +x launch_explorer.sh
+chmod +x scripts/linux/launch_explorer.sh
 ```
 
 ### Repositories non détectés
@@ -165,11 +246,14 @@ Vérifiez que :
 L'application détecte automatiquement WSL et utilise `wslpath` pour convertir les chemins Linux vers Windows.
 Si vous rencontrez des problèmes :
 - Vérifiez que `wslpath` est disponible : `which wslpath`
-- Le chemin est converti dynamiquement selon la distribution WSL (définie dans `config.json` → `windows.distro`), par exemple : `\\wsl.localhost\Ubuntu\...`
+- Le chemin est converti dynamiquement selon la distribution WSL (définie dans `config/config.json` → `windows.distro`), par exemple : `\\wsl.localhost\Ubuntu\...`
+
+### Configuration manquante
+Si `config/config.json` n'existe pas, il sera automatiquement créé depuis `config/config.example.json` au premier lancement.
 
 ## Développement
 
 L'application est composée de deux fichiers principaux :
-- `github_repo_explorer.py` : Interface graphique (tkinter)
-- `console_repo_explorer.py` : Interface console
-- `launch_explorer.sh` : Script de lancement automatique
+- `src/github_repo_explorer.py` : Interface graphique (tkinter)
+- `src/console_repo_explorer.py` : Interface console
+- `scripts/linux/launch_explorer.sh` : Script de lancement automatique
