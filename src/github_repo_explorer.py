@@ -10,6 +10,8 @@ import json
 import argparse
 from pathlib import Path
 import shutil
+import webbrowser
+import re
 
 class ConfigManager:
     def __init__(self, config_file: str | None = None):
@@ -332,8 +334,8 @@ class GitRepoExplorer:
         tree_frame = tk.Frame(main_frame)
         tree_frame.pack(fill='both', expand=True)
         
-        # Colonnes
-        columns = ('name', 'branch', 'status', 'last_commit', 'date', 'ahead_behind', 'remote')
+        # Colonnes (ajout d'une colonne cachée pour stocker le chemin et l'objet repo)
+        columns = ('name', 'branch', 'status', 'last_commit', 'date', 'ahead_behind', 'remote', 'repo_path')
         self.tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=20)
         
         # Configuration des colonnes
@@ -352,6 +354,9 @@ class GitRepoExplorer:
         self.tree.column('date', width=100, minwidth=80)
         self.tree.column('ahead_behind', width=80, minwidth=60)
         self.tree.column('remote', width=200, minwidth=150)
+        # Colonne cachée pour stocker le chemin du repository
+        self.tree.column('repo_path', width=0, minwidth=0, stretch=False)
+        self.tree.heading('repo_path', text='')
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(tree_frame, orient='vertical', command=self.tree.yview)
@@ -512,7 +517,8 @@ class GitRepoExplorer:
                 repo.last_commit,
                 repo.last_commit_date,
                 repo.ahead_behind,
-                repo.remote_url.split('/')[-1].replace('.git', '') if repo.remote_url != "N/A" else "N/A"
+                repo.remote_url.split('/')[-1].replace('.git', '') if repo.remote_url != "N/A" else "N/A",
+                repo.path  # Chemin complet stocké dans la colonne cachée
             ), tags=tags)
         
         # Configuration des tags
@@ -532,16 +538,29 @@ class GitRepoExplorer:
             ]
         self._update_tree()
     
+    def _get_repo_info_from_item(self, item):
+        """Récupère les informations du repository à partir d'un item du Treeview"""
+        try:
+            values = self.tree.item(item)['values']
+            if len(values) < 8:  # Vérifier qu'on a toutes les colonnes
+                return None
+            
+            repo_path = values[7]  # Chemin complet depuis la colonne cachée
+            # Chercher l'objet GitRepoInfo correspondant
+            for repo in self.filtered_repos:
+                if repo.path == repo_path:
+                    return repo
+            return None
+        except:
+            return None
+    
     def _on_double_click(self, event):
         selection = self.tree.selection()
         if selection:
-            values = self.tree.item(selection[0])['values']
-            repo_display_name = values[0]
-            
-            # Extraire le chemin relatif en enlevant l'icône et l'indentation
-            parts = repo_display_name.split(' ')
-            relative_path = ' '.join(parts[1:]).strip()
-            repo_path = os.path.join(self.root_path, relative_path)
+            repo_info = self._get_repo_info_from_item(selection[0])
+            if not repo_info:
+                return
+            repo_path = repo_info.path
             
             try:
                 # Détecter si nous sommes dans WSL
@@ -586,13 +605,11 @@ class GitRepoExplorer:
     
     def _show_context_menu(self, event, item):
         """Affiche le menu contextuel avec les options d'ouverture"""
-        values = self.tree.item(item)['values']
-        repo_display_name = values[0]
-        
-        # Extraire le chemin relatif
-        parts = repo_display_name.split(' ')
-        relative_path = ' '.join(parts[1:]).strip()
-        repo_path = os.path.join(self.root_path, relative_path)
+        repo_info = self._get_repo_info_from_item(item)
+        if not repo_info:
+            return
+            
+        repo_path = repo_info.path
         
         # Créer le menu contextuel
         context_menu = tk.Menu(self.root, tearoff=0)
@@ -603,21 +620,36 @@ class GitRepoExplorer:
             command=lambda: self._open_in_explorer(repo_path)
         )
         
-        # Option 2: Ouvrir dans VS Code
+        context_menu.add_separator()
+        
+        # Option 2: Ouvrir avec Cursor
+        context_menu.add_command(
+            label="🖱️ Ouvrir avec Cursor",
+            command=lambda: self._open_in_cursor(repo_path)
+        )
+
+        # Option 3: Ouvrir dans VS Code
         context_menu.add_command(
             label="💻 Ouvrir dans VS Code",
             command=lambda: self._open_in_vscode(repo_path)
         )
         
+        # Option 4: Ouvrir sur GitHub (conditionnel)
+        if repo_info.is_git_repo and repo_info.remote_url and repo_info.remote_url != "N/A":
+            context_menu.add_command(
+                label="🌐 Ouvrir sur GitHub",
+                command=lambda: self._open_in_github(repo_info.remote_url)
+            )
+        
         context_menu.add_separator()
         
-        # Option 3: Copier le chemin
+        # Option 5: Copier le chemin
         context_menu.add_command(
             label="📋 Copier le chemin",
             command=lambda: self._copy_path_to_clipboard(repo_path)
         )
         
-        # Option 4: Copier la commande VS Code
+        # Option 6: Copier la commande VS Code
         context_menu.add_command(
             label="⌨️ Copier commande 'code'",
             command=lambda: self._copy_vscode_command(repo_path)
@@ -692,6 +724,117 @@ class GitRepoExplorer:
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible d'ouvrir VS Code: {str(e)}")
     
+    def _open_in_cursor(self, repo_path):
+        """Ouvre le repository dans Cursor"""
+        try:
+            # Essayer d'abord avec 'cursor'
+            result = subprocess.run(["cursor", repo_path], check=False, capture_output=True)
+            
+            if result.returncode != 0:
+                is_wsl = False
+                if os.path.exists('/proc/version'):
+                    with open('/proc/version', 'r') as f:
+                        version_content = f.read().lower()
+                        if 'microsoft' in version_content or 'wsl' in version_content:
+                            is_wsl = True
+                
+                if is_wsl:
+                    result = subprocess.run(["cursor.exe", repo_path], check=False, capture_output=True)
+
+                if result.returncode != 0:
+                    messagebox.showwarning(
+                        "Cursor introuvable", 
+                        "Cursor n'est pas installé ou pas dans le PATH.\n\n"
+                        "Solutions:\n"
+                        "• Installer Cursor\n"
+                        "• Ajouter 'cursor' au PATH"
+                    )
+                    return
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible d'ouvrir Cursor: {str(e)}")
+
+    def _open_in_github(self, remote_url):
+        """Ouvre la page du repository sur GitHub dans un navigateur"""
+        http_url = None
+        
+        # Cas 1: URL HTTPS (ex: https://github.com/user/repo.git)
+        if remote_url.startswith("https://") or remote_url.startswith("http://"):
+            http_url = remote_url.replace(".git", "")
+        # Cas 2: URL SSH (ex: git@github.com:user/repo.git)
+        elif remote_url.startswith("git@"):
+            match = re.search(r'git@([\w.-]+):(.+)', remote_url)
+            if match:
+                host, path = match.groups()
+                if path.endswith('.git'):
+                    path = path[:-4]
+                http_url = f"https://{host}/{path}"
+
+        if http_url:
+            try:
+                # Détecter si nous sommes dans WSL
+                is_wsl = False
+                if os.path.exists('/proc/version'):
+                    with open('/proc/version', 'r') as f:
+                        version_content = f.read().lower()
+                        if 'microsoft' in version_content or 'wsl' in version_content:
+                            is_wsl = True
+                
+                if is_wsl:
+                    # Dans WSL, essayer plusieurs méthodes pour ouvrir le navigateur Windows
+                    success = False
+                    
+                    # Méthode 1: explorer.exe avec l'URL
+                    try:
+                        result = subprocess.run(["explorer.exe", http_url], check=False, capture_output=True)
+                        if result.returncode == 0:
+                            success = True
+                    except:
+                        pass
+                    
+                    # Méthode 2: cmd.exe avec start
+                    if not success:
+                        try:
+                            result = subprocess.run(["cmd.exe", "/c", "start", "", http_url], check=False, capture_output=True, timeout=5)
+                            if result.returncode == 0:
+                                success = True
+                        except:
+                            pass
+                    
+                    # Méthode 3: powershell.exe
+                    if not success:
+                        try:
+                            result = subprocess.run(["powershell.exe", "-c", f"Start-Process '{http_url}'"], check=False, capture_output=True, timeout=5)
+                            if result.returncode == 0:
+                                success = True
+                        except:
+                            pass
+                    
+                    # Fallback: webbrowser Python
+                    if not success:
+                        try:
+                            webbrowser.open_new_tab(http_url)
+                            success = True
+                        except:
+                            pass
+                    
+                    if success:
+                        messagebox.showinfo("Succès", f"Ouverture du repository sur GitHub:\n{http_url}")
+                    else:
+                        # Copier l'URL dans le presse-papiers comme fallback
+                        self.root.clipboard_clear()
+                        self.root.clipboard_append(http_url)
+                        self.root.update()
+                        messagebox.showwarning("Navigateur inaccessible", f"Impossible d'ouvrir le navigateur automatiquement.\nL'URL a été copiée dans le presse-papiers:\n{http_url}")
+                else:
+                    # Système Linux natif ou autres
+                    webbrowser.open_new_tab(http_url)
+                    messagebox.showinfo("Succès", f"Ouverture du repository sur GitHub:\n{http_url}")
+                    
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Impossible d'ouvrir le navigateur: {str(e)}\nURL: {http_url}")
+        else:
+            messagebox.showwarning("URL non reconnue", f"Le format de l'URL distante n'est pas supporté:\n{remote_url}")
+
     def _copy_path_to_clipboard(self, repo_path):
         """Copie le chemin du repository dans le presse-papiers"""
         try:
@@ -717,29 +860,17 @@ class GitRepoExplorer:
         """Raccourci Ctrl+Enter pour ouvrir dans VS Code"""
         selection = self.tree.selection()
         if selection:
-            values = self.tree.item(selection[0])['values']
-            repo_display_name = values[0]
-            
-            # Extraire le chemin relatif
-            parts = repo_display_name.split(' ')
-            relative_path = ' '.join(parts[1:]).strip()
-            repo_path = os.path.join(self.root_path, relative_path)
-            
-            self._open_in_vscode(repo_path)
+            repo_info = self._get_repo_info_from_item(selection[0])
+            if repo_info:
+                self._open_in_vscode(repo_info.path)
     
     def _on_ctrl_c(self, event):
         """Raccourci Ctrl+C pour copier le chemin"""
         selection = self.tree.selection()
         if selection:
-            values = self.tree.item(selection[0])['values']
-            repo_display_name = values[0]
-            
-            # Extraire le chemin relatif
-            parts = repo_display_name.split(' ')
-            relative_path = ' '.join(parts[1:]).strip()
-            repo_path = os.path.join(self.root_path, relative_path)
-            
-            self._copy_path_to_clipboard(repo_path)
+            repo_info = self._get_repo_info_from_item(selection[0])
+            if repo_info:
+                self._copy_path_to_clipboard(repo_info.path)
     
     def _show_help(self):
         """Affiche une fenêtre d'aide avec la légende"""
