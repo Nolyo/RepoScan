@@ -1,9 +1,9 @@
 @echo off
+setlocal ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
 REM Script pour configurer le raccourci bureau
 REM GitHub Repository Explorer - Kering
 
 title Configuration du raccourci - Kering Repo Explorer
-
 color 0B
 echo.
 echo ================================================
@@ -14,33 +14,90 @@ echo.
 
 REM Créer le dossier dans AppData si nécessaire
 set "AppFolder=%LOCALAPPDATA%\KeringRepoExplorer"
+set "LogFile=%AppFolder%\setup.log"
+REM Resoudre dynamiquement le dossier Bureau (compatible OneDrive/redirect)
+for /f "usebackq delims=" %%D in (`powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"`) do set "DesktopDir=%%D"
+if not defined DesktopDir set "DesktopDir=%USERPROFILE%\Desktop"
+set "ShortcutPath=%DesktopDir%\Kering Repo Explorer.lnk"
 if not exist "%AppFolder%" (
     echo Creation du dossier application...
     mkdir "%AppFolder%"
 )
 
-REM Copier le script batch vers Windows
-echo Copie du lanceur...
-copy "\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\pytool\launch_kering_explorer.bat" "%AppFolder%\"
+echo [%DATE% %TIME%] Debut installation > "%LogFile%"
+echo Script lance depuis : %~dp0 >> "%LogFile%"
+echo Dossier application  : %AppFolder% >> "%LogFile%"
+echo Raccourci cible      : %ShortcutPath% >> "%LogFile%"
 
-if errorlevel 1 (
+REM Copier le script batch depuis le dossier courant du script
+echo Copie du lanceur
+copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >nul 2>&1 & copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >> "%LogFile%" 2>>&1
+IF NOT EXIST "%AppFolder%\launch_kering_explorer.bat" (
     echo.
     echo ERREUR: Impossible de copier le fichier depuis WSL
+    echo ERREUR: Impossible de copier le fichier depuis WSL >> "%LogFile%"
     echo.
     echo Solutions:
     echo 1. Assurez-vous que WSL Ubuntu est demarre
-    echo 2. Verifiez que le chemin existe
-    echo 3. Essayez de copier manuellement le fichier
+    echo 2. Verifiez que vous avez lance ce script depuis le dossier du projet
+    echo 3. Essayez de copier manuellement le fichier depuis %~dp0 vers %AppFolder%
     echo.
     pause
     exit /b 1
 )
 
-REM Créer le raccourci sur le bureau avec PowerShell
-echo Creation du raccourci sur le bureau...
-powershell -Command "& {$WshShell = New-Object -comObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%USERPROFILE%\Desktop\Kering Repo Explorer.lnk'); $Shortcut.TargetPath = '%AppFolder%\launch_kering_explorer.bat'; $Shortcut.WorkingDirectory = '%AppFolder%'; $Shortcut.Description = 'GitHub Repository Explorer - Kering Projects'; $Shortcut.IconLocation = '%SystemRoot%\System32\shell32.dll,4'; $Shortcut.Save()}"
+REM Copier la configuration centralisee si presente (config.json)
+if exist "%~dp0config.json" (
+    echo Copie de la configuration (config.json)
+    copy /Y "%~dp0config.json" "%AppFolder%\" >nul 2>&1 & copy /Y "%~dp0config.json" "%AppFolder%\" >> "%LogFile%" 2>>&1
+)
 
-if %errorlevel% equ 0 (
+REM (Ancien support win_config.json supprime)
+
+REM Créer le raccourci sur le bureau avec PowerShell
+echo Creation du raccourci sur le bureau
+echo Generation du script PowerShell temporaire >> "%LogFile%"
+set "TmpPs1=%TEMP%\kering_create_shortcut.ps1"
+del /Q "%TmpPs1%" >nul 2>&1
+echo $ErrorActionPreference = 'Stop'>>"%TmpPs1%"
+echo $WshShell = New-Object -ComObject WScript.Shell>>"%TmpPs1%"
+echo $desktop = [Environment]::GetFolderPath('Desktop')>>"%TmpPs1%"
+echo if (-not (Test-Path -LiteralPath $desktop)) { throw "Desktop folder not found: $desktop" }>>"%TmpPs1%"
+echo $lnkPath = Join-Path $desktop 'Kering Repo Explorer.lnk'>>"%TmpPs1%"
+echo $Shortcut = $WshShell.CreateShortcut($lnkPath)>>"%TmpPs1%"
+echo $Shortcut.TargetPath = '%AppFolder%\launch_kering_explorer.bat'>>"%TmpPs1%"
+echo $Shortcut.WorkingDirectory = '%AppFolder%'>>"%TmpPs1%"
+echo $Shortcut.Description = 'GitHub Repository Explorer - Kering Projects'>>"%TmpPs1%"
+echo $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,4" >>"%TmpPs1%"
+echo $Shortcut.Save()>>"%TmpPs1%"
+
+if not exist "%TmpPs1%" (
+    echo ERREUR: Le script temporaire PowerShell n'a pas ete cree >> "%LogFile%"
+    echo ERREUR: Le script temporaire PowerShell n'a pas ete cree
+    echo Emplacement attendu: %TmpPs1%
+    pause
+    exit /b 1
+)
+
+echo Execution du script PowerShell: %TmpPs1% >> "%LogFile%"
+echo Verif existence script: %TmpPs1% >> "%LogFile%"
+if exist "%TmpPs1%" (
+    echo OK: script present >> "%LogFile%"
+) else (
+    echo ERREUR: script absent juste avant execution >> "%LogFile%"
+)
+powershell -NoProfile -Command "Write-Host 'PS Test-Path:' (Test-Path -LiteralPath '%TmpPs1%')" >> "%LogFile%" 2>>&1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%TmpPs1%" >> "%LogFile%" 2>>&1
+set "PS_EXITCODE=%ERRORLEVEL%"
+del /Q "%TmpPs1%" >nul 2>&1
+
+REM Fallback: si le raccourci n'existe pas, reessayer via -Command inline
+if not exist "%ShortcutPath%" (
+    echo Fallback: tentative creation inline PowerShell >> "%LogFile%"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop 'Kering Repo Explorer.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='%AppFolder%\launch_kering_explorer.bat'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='GitHub Repository Explorer - Kering Projects'; $sc.IconLocation=\"$env:SystemRoot\System32\shell32.dll,4\"; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+)
+
+if exist "%ShortcutPath%" (
     echo.
     echo ================================================
     echo            INSTALLATION REUSSIE!
@@ -51,11 +108,16 @@ if %errorlevel% equ 0 (
     echo.
     echo Double-cliquez dessus pour lancer l'application!
     echo.
+    echo [%DATE% %TIME%] Raccourci cree avec succes >> "%LogFile%"
 ) else (
     echo.
     echo ERREUR: Impossible de creer le raccourci
-    echo Essayez de creer manuellement le raccourci vers:
-    echo %AppFolder%\launch_kering_explorer.bat
+    echo Essayez de creer manuellement le raccourci vers: 
+    echo    %AppFolder%\launch_kering_explorer.bat
+    echo Consultez le log pour plus de details:
+    echo    %LogFile%
+    echo Code retour PowerShell: !PS_EXITCODE! >> "%LogFile%"
+    echo ERREUR: Le raccourci n'existe pas apres creation >> "%LogFile%"
     echo.
 )
 

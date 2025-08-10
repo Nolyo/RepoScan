@@ -9,7 +9,7 @@
 
 ### Étape 2 : Naviguer vers le dossier
 ```powershell
-cd "\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\pytool"
+cd "
 ```
 
 ### Étape 3 : Exécuter le script d'installation

@@ -4,25 +4,40 @@ REM Ce script lance l'application depuis Windows vers WSL
 
 title GitHub Repository Explorer - Kering
 
-REM Couleurs pour le terminal
-color 0A
+setlocal ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
 
-echo.
-echo ===============================================
-echo    GitHub Repository Explorer - Kering
-echo ===============================================
-echo.
-echo Lancement de l'application...
-echo.
+REM Dossier du script (où ce .bat est situé)
+set "ScriptDir=%~dp0"
+set "LogFile=%ScriptDir%launch.log"
+echo [%DATE% %TIME%] Lancement du Repo Explorer > "%LogFile%"
 
-REM Lancer l'application dans WSL
-wsl -d Ubuntu bash -c "cd /home/yjaffres/www/kering/pytool && ./launch_explorer.sh"
+REM Valeurs par defaut si pas de config
+set "WSL_DISTRO=Ubuntu"
+set "LINUX_PROJECT_PATH=~/www/pytool"
 
-REM Attendre une touche avant de fermer (au cas où il y aurait une erreur)
-if errorlevel 1 (
-    echo.
-    echo Une erreur s'est produite lors du lancement.
-    echo Verifiez que WSL et Ubuntu sont installes et configures.
-    echo.
-    pause
+REM Lire config.json (section windows) si present
+if exist "%ScriptDir%config.json" (
+  for /f "usebackq tokens=* delims=" %%I in (`powershell -NoProfile -Command "try{(Get-Content -Raw '%ScriptDir%config.json' | ConvertFrom-Json).windows.distro}catch{''}"`) do if not "%%I"=="" set "WSL_DISTRO=%%I"
+  for /f "usebackq tokens=* delims=" %%I in (`powershell -NoProfile -Command "try{(Get-Content -Raw '%ScriptDir%config.json' | ConvertFrom-Json).windows.linux_project_path}catch{''}"`) do if not "%%I"=="" set "LINUX_PROJECT_PATH=%%I"
 )
+
+echo Lancement de l'application sur %WSL_DISTRO% ... >> "%LogFile%"
+
+REM Lancer le script dans un shell de connexion WSL et se placer dans le dossier du projet
+wsl.exe -d %WSL_DISTRO% -- bash -lc "cd \"%LINUX_PROJECT_PATH%\" && bash ./launch_explorer.sh" >> "%LogFile%" 2>>&1
+
+set "EXITCODE=%ERRORLEVEL%"
+if not "%EXITCODE%"=="0" (
+  echo [%DATE% %TIME%] ERREUR: code retour WSL=%EXITCODE% >> "%LogFile%"
+  echo Un probleme est survenu. Consultez le log: "%LogFile%"
+  echo.
+  type "%LogFile%"
+  echo.
+  pause
+  exit /b %EXITCODE%
+)
+
+echo [%DATE% %TIME%] Terminé avec succès >> "%LogFile%"
+exit /b 0
+
+endlocal

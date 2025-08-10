@@ -10,5 +10,9 @@
         "title_background": "#2c3e50",
         "search_background": "#ecf0f1",
         "status_background": "#34495e"
+    },
+    "windows": {
+        "distro": "Ubuntu",
+        "linux_project_path": "/home/USER/www/pytool"
     }
 }

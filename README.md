@@ -1,6 +1,6 @@
 # GitHub Repository Explorer - Kering
 
-Une application pour explorer et analyser les repositories GitHub dans le répertoire `/home/yjaffres/www/kering`.
+Une application pour explorer et analyser les repositories GitHub dans le répertoire défini dans votre configuration (`config.json` → `default_repository_path`).
 
 ## Fonctionnalités
 
@@ -13,6 +13,27 @@ Une application pour explorer et analyser les repositories GitHub dans le réper
 - 🌐 **Montre le nom du repository remote**
 - 🔍 **Fonction de recherche** (interface graphique uniquement)
 - 🏗️ **Affichage hiérarchique** avec indentation pour les repositories imbriqués
+
+## Configuration
+
+Cette application utilise un seul fichier de configuration: `config.json`.
+
+Clés principales:
+- `default_repository_path` (Linux/WSL): chemin racine contenant vos repositories à scanner
+- `max_scan_depth`, `fetch_timeout_seconds`, `gui_window_size`, `show_empty_folders`, `theme`
+- `windows.distro`: nom de la distribution WSL (ex: `Ubuntu`)
+- `windows.linux_project_path`: chemin Linux du projet (emplacement de ce repo) utilisé par le lanceur Windows
+
+Exemple minimal:
+```json
+{
+  "default_repository_path": "/home/USER/www/kering",
+  "windows": {
+    "distro": "Ubuntu",
+    "linux_project_path": "/home/USER/www/pytool"
+  }
+}
+```
 
 ## Utilisation
 
@@ -121,7 +142,7 @@ sudo dnf install python3-tkinter
 - Python 3.6+
 - Git installé
 - tkinter (optionnel, pour l'interface graphique)
-- Accès au répertoire `/home/yjaffres/www/kering`
+- Accès au répertoire défini dans `config.json` (`default_repository_path`)
 
 ## Dépannage
 
@@ -144,7 +165,7 @@ Vérifiez que :
 L'application détecte automatiquement WSL et utilise `wslpath` pour convertir les chemins Linux vers Windows.
 Si vous rencontrez des problèmes :
 - Vérifiez que `wslpath` est disponible : `which wslpath`
-- Le chemin sera converti vers : `\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\...`
+- Le chemin est converti dynamiquement selon la distribution WSL (définie dans `config.json` → `windows.distro`), par exemple : `\\wsl.localhost\Ubuntu\...`
 
 ## Développement
 

@@ -7,8 +7,11 @@ Write-Host ""
 # Chemins
 $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
 $ShortcutPath = Join-Path $DesktopPath "Kering Repo Explorer.lnk"
-$BatchPath = "\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\pytool\launch_kering_explorer.bat"
-$WorkingDirectory = "\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\pytool"
+
+# Utiliser le dossier où se trouve ce script (compatible lorsqu'il est lancé depuis le partage UNC WSL)
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$BatchPath = Join-Path $ScriptDir "launch_kering_explorer.bat"
+$WorkingDirectory = $ScriptDir
 
 Write-Host "Bureau detecte: $DesktopPath" -ForegroundColor Cyan
 Write-Host "Raccourci: $ShortcutPath" -ForegroundColor Cyan
@@ -19,11 +22,11 @@ Write-Host ""
 if (-not (Test-Path $BatchPath)) {
     Write-Host "ERREUR: Le fichier batch n'existe pas!" -ForegroundColor Red
     Write-Host "Chemin: $BatchPath" -ForegroundColor Red
-    Write-Host ""
+    Write-Host "" 
     Write-Host "Solutions possibles:" -ForegroundColor Yellow
-    Write-Host "1. Verifiez que WSL Ubuntu est lance" -ForegroundColor Yellow
+    Write-Host "1. Lancez ce script depuis le dossier du projet accessible en UNC (\\\\wsl.localhost\\<Distro>\\...)" -ForegroundColor Yellow
     Write-Host "2. Verifiez le chemin vers le fichier" -ForegroundColor Yellow
-    Write-Host "3. Essayez de copier manuellement le fichier .bat vers Windows" -ForegroundColor Yellow
+    Write-Host "3. Verifiez que WSL et votre distribution sont bien demarres" -ForegroundColor Yellow
     exit 1
 }
 
