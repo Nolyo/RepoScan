@@ -21,13 +21,6 @@ Le fichier `config.json` se trouve dans le dossier `config/config.json` à la ra
     "windows": {
         "distro": "Ubuntu",
         "linux_project_path": "/home/USER/www/repo-scan"
-    },
-    "theme": {
-        "clean_repository_color": "#d5f4e6",
-        "modified_repository_color": "#ffeaa7",
-        "title_background": "#2c3e50",
-        "search_background": "#ecf0f1",
-        "status_background": "#34495e"
     }
 }
 ```
