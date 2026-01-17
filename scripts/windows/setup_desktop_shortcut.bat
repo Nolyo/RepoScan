@@ -98,10 +98,36 @@ IF NOT EXIST "%AppFolder%\launch_kering_explorer.bat" (
     exit /b 1
 )
 
-REM Copier la configuration centralisee si presente (config/config.json)
+REM Copier la configuration centralisee (config/config.json)
 if exist "%SourceConfig%" (
     echo Copie de la configuration (config.json)
     copy /Y "%SourceConfig%" "%AppFolder%\" >nul 2>&1 & copy /Y "%SourceConfig%" "%AppFolder%\" >> "%LogFile%" 2>>&1
+    
+    REM Lire le chemin Linux configuré pour validation
+    set "ConfiguredPath="
+    for /f "usebackq tokens=* delims=" %%I in (`powershell -NoProfile -Command "try{(Get-Content -Raw '%SourceConfig%' | ConvertFrom-Json).windows.linux_project_path}catch{''}"`) do set "ConfiguredPath=%%I"
+    
+    if not "%ConfiguredPath%"=="" (
+        echo.
+        echo ⚠️  IMPORTANT: Verification du chemin Linux du projet
+        echo    Chemin configure: %ConfiguredPath%
+        echo.
+        echo    Ce chemin doit correspondre a l'emplacement ou vous avez clone
+        echo    ce projet dans votre environnement WSL/Linux.
+        echo.
+        echo    Si ce chemin n'est pas correct, vous pouvez:
+        echo    1. Modifier manuellement: %AppFolder%\config.json
+        echo    2. Section: "windows" ^> "linux_project_path"
+        echo.
+        set /p "ConfirmPath=Le chemin %ConfiguredPath% est-il correct? (o/n): "
+        
+        if /i "!ConfirmPath!"=="n" (
+            echo.
+            echo    Veuillez modifier le fichier de configuration apres installation:
+            echo    %AppFolder%\config.json
+            echo.
+        )
+    )
 ) else (
     echo ATTENTION: config.json introuvable a l'emplacement attendu: %SourceConfig% >> "%LogFile%"
 )

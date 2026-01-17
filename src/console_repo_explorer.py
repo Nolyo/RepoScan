@@ -60,7 +60,8 @@ class ConfigManager:
         try:
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    config = json.load(f)
+                    return self._validate_and_fix_config(config)
             else:
                 # Copier config.example.json vers config.json si disponible
                 example_file = self._find_config_example(self.config_file)
@@ -70,24 +71,61 @@ class ConfigManager:
                     config_dir.mkdir(parents=True, exist_ok=True)
                     
                     shutil.copy2(example_file, self.config_file)
-                    print(f"Configuration créée depuis {example_file}")
+                    print(f"⚠️  Configuration créée depuis {example_file}")
+                    print(f"📝 Veuillez vérifier et ajuster les chemins dans {self.config_file}")
                     
                     with open(self.config_file, 'r', encoding='utf-8') as f:
-                        return json.load(f)
+                        config = json.load(f)
+                        return self._validate_and_fix_config(config, first_run=True)
                 else:
-                    raise FileNotFoundError(f"Aucun fichier config.example.json trouvé près de {self.config_file}")
+                    print(f"⚠️  Aucun fichier config.example.json trouvé, création avec des valeurs par défaut")
+                    return self._get_default_config()
         except Exception as e:
-            print(f"Erreur lors du chargement de la config: {e}")
-            # Fallback minimal en cas d'erreur
-            return {
-                "app_name": "RepoScan",
-                "shortcut_name": "RepoScan",
-                "default_repository_path": str(Path.home()),
-                "max_scan_depth": 3,
-                "fetch_timeout_seconds": 30,
-                "gui_window_size": "1400x800",
-                "show_empty_folders": True
-            }
+            print(f"❌ Erreur lors du chargement de la config: {e}")
+            return self._get_default_config()
+    
+    def _validate_and_fix_config(self, config, first_run=False):
+        """Valide et corrige la configuration, notamment les chemins"""
+        # Vérifier le chemin par défaut des repositories
+        repo_path = config.get('default_repository_path', '')
+        
+        # Expander le tilde (~) si présent
+        if repo_path.startswith('~'):
+            repo_path = str(Path(repo_path).expanduser())
+            config['default_repository_path'] = repo_path
+        
+        if not repo_path or not os.path.exists(repo_path):
+            home_path = str(Path.home())
+            
+            if first_run:
+                print(f"❌ Le chemin '{repo_path}' n'existe pas sur ce système")
+                print(f"🔧 Configuration automatique avec votre répertoire home: {home_path}")
+                print(f"💡 Vous pouvez modifier ce chemin dans {self.config_file}")
+                print(f"   ou utiliser: python3 {Path(__file__).name} /votre/chemin/repos")
+            else:
+                print(f"❌ ERREUR: Le chemin '{repo_path}' configuré n'existe pas!")
+                print(f"🔧 Solutions possibles:")
+                print(f"   1. Créer le dossier: mkdir -p '{repo_path}'")
+                print(f"   2. Modifier le chemin dans: {self.config_file}")
+                print(f"   3. Utiliser un autre chemin: python3 {Path(__file__).name} /votre/chemin")
+                print(f"🏠 Utilisation temporaire de: {home_path}")
+            
+            config['default_repository_path'] = home_path
+            self.save_config(config)
+        
+        return config
+    
+    def _get_default_config(self):
+        """Retourne une configuration par défaut sûre"""
+        return {
+            "app_name": "RepoScan",
+            "shortcut_name": "RepoScan", 
+            "default_repository_path": str(Path.home()),
+            "max_scan_depth": 3,
+            "fetch_timeout_seconds": 30,
+            "gui_window_size": "1400x800",
+            "show_empty_folders": True
+        }
     
     def save_config(self, config=None):
         """Sauvegarde la configuration dans le fichier JSON"""
