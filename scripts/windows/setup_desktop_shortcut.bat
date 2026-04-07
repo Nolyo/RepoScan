@@ -80,11 +80,11 @@ echo Raccourci cible      : %ShortcutPath% >> "%LogFile%"
 
 REM Copier le script batch depuis le dossier courant du script
 echo Copie du lanceur (ecrasement force)
-del /Q "%AppFolder%\launch_kering_explorer.bat" >nul 2>&1
-copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >nul 2>&1
+del /Q "%AppFolder%\launch.bat" >nul 2>&1
+copy /Y "%~dp0launch.bat" "%AppFolder%\" >nul 2>&1
 echo Verification de la copie >> "%LogFile%"
-copy /Y "%~dp0launch_kering_explorer.bat" "%AppFolder%\" >> "%LogFile%" 2>>&1
-IF NOT EXIST "%AppFolder%\launch_kering_explorer.bat" (
+copy /Y "%~dp0launch.bat" "%AppFolder%\" >> "%LogFile%" 2>>&1
+IF NOT EXIST "%AppFolder%\launch.bat" (
     echo.
     echo ERREUR: Impossible de copier le fichier depuis WSL
     echo ERREUR: Impossible de copier le fichier depuis WSL >> "%LogFile%"
@@ -137,8 +137,8 @@ echo.
 REM Copier le script silencieux si n�cessaire
 if "%SilentMode%"=="true" (
     echo Copie du lanceur silencieux
-    copy /Y "%~dp0launch_kering_explorer_silent.ps1" "%AppFolder%\" >nul 2>&1
-    if not exist "%AppFolder%\launch_kering_explorer_silent.ps1" (
+    copy /Y "%~dp0launch_silent.ps1" "%AppFolder%\" >nul 2>&1
+    if not exist "%AppFolder%\launch_silent.ps1" (
         echo ERREUR: Impossible de copier le script silencieux
         set "SilentMode=false"
         echo Utilisation du mode standard par defaut
@@ -148,7 +148,7 @@ if "%SilentMode%"=="true" (
 REM Cr�er le raccourci sur le bureau avec PowerShell
 echo Creation du raccourci sur le bureau
 echo Generation du script PowerShell temporaire >> "%LogFile%"
-set "TmpPs1=%TEMP%\kering_create_shortcut.ps1"
+set "TmpPs1=%TEMP%\reposcan_create_shortcut.ps1"
 del /Q "%TmpPs1%" >nul 2>&1
 echo $ErrorActionPreference = 'Stop'>>"%TmpPs1%"
 echo $WshShell = New-Object -ComObject WScript.Shell>>"%TmpPs1%"
@@ -159,13 +159,13 @@ echo $Shortcut = $WshShell.CreateShortcut($lnkPath)>>"%TmpPs1%"
 
 if "%SilentMode%"=="true" (
     echo $Shortcut.TargetPath = 'powershell.exe'>>"%TmpPs1%"
-    echo $Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File "%AppFolder%\launch_kering_explorer_silent.ps1"'>>"%TmpPs1%"
+    echo $Shortcut.Arguments = '-WindowStyle Hidden -ExecutionPolicy Bypass -File "%AppFolder%\launch_silent.ps1"'>>"%TmpPs1%"
     echo $Shortcut.WindowStyle = 7>>"%TmpPs1%"
 ) else (
     REM Mode standard : creer un script PowerShell intermediaire pour eviter les problemes de guillemets
     set "LauncherPs1=%AppFolder%\launch_with_feedback.ps1"
     echo Write-Host "Lancement de %APP_NAME%..." > "%AppFolder%\launch_with_feedback.ps1"
-    echo Start-Process -FilePath "%AppFolder%\launch_kering_explorer.bat" -WindowStyle Hidden >> "%AppFolder%\launch_with_feedback.ps1"
+    echo Start-Process -FilePath "%AppFolder%\launch.bat" -WindowStyle Hidden >> "%AppFolder%\launch_with_feedback.ps1"
     echo Write-Host "Application lancee en arriere-plan" >> "%AppFolder%\launch_with_feedback.ps1"
     echo Start-Sleep -Seconds 3 >> "%AppFolder%\launch_with_feedback.ps1"
     echo Write-Host "Fermeture automatique..." >> "%AppFolder%\launch_with_feedback.ps1"
@@ -204,7 +204,7 @@ REM Fallback: si le raccourci n'existe pas, reessayer via -Command inline
 if not exist "%ShortcutPath%" (
     echo Fallback: tentative creation inline PowerShell >> "%LogFile%"
     if "%SilentMode%"=="true" (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-WindowStyle Hidden -ExecutionPolicy Bypass -File \"%AppFolder%\launch_kering_explorer_silent.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation='%AppFolder%\app_icon.ico'; $sc.WindowStyle=7; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-WindowStyle Hidden -ExecutionPolicy Bypass -File \"%AppFolder%\launch_silent.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation='%AppFolder%\app_icon.ico'; $sc.WindowStyle=7; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
     ) else (
         powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $desktop=[Environment]::GetFolderPath('Desktop'); if (-not (Test-Path -LiteralPath $desktop)) { throw 'Desktop not found' }; $ws=New-Object -ComObject WScript.Shell; $lnk=Join-Path $desktop '%SHORTCUT_NAME%.lnk'; $sc=$ws.CreateShortcut($lnk); $sc.TargetPath='powershell.exe'; $sc.Arguments='-ExecutionPolicy Bypass -File \"%AppFolder%\launch_with_feedback.ps1\"'; $sc.WorkingDirectory='%AppFolder%'; $sc.Description='%APP_NAME%'; $sc.IconLocation='%AppFolder%\app_icon.ico'; $sc.Save(); exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }" >> "%LogFile%" 2>>&1
     )
@@ -226,7 +226,7 @@ if exist "%ShortcutPath%" (
     echo.
     echo ERREUR: Impossible de creer le raccourci
     echo Essayez de creer manuellement le raccourci vers: 
-    echo    %AppFolder%\launch_kering_explorer.bat
+    echo    %AppFolder%\launch.bat
     echo Consultez le log pour plus de details:
     echo    %LogFile%
     echo Code retour PowerShell: !PS_EXITCODE! >> "%LogFile%"

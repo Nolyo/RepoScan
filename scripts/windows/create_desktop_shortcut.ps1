@@ -38,7 +38,7 @@ $ShortcutPath = Join-Path $DesktopPath ("{0}.lnk" -f $ShortcutName)
 
 # Utiliser le dossier où se trouve ce script (compatible lorsqu'il est lancé depuis le partage UNC WSL)
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$BatchPath = Join-Path $ScriptDir "launch_kering_explorer.bat"
+$BatchPath = Join-Path $ScriptDir "launch.bat"
 $WorkingDirectory = $ScriptDir
 
 Write-Host "Bureau detecte: $DesktopPath" -ForegroundColor Cyan
@@ -57,7 +57,7 @@ $SilentMode = $false
 $TargetPath = $BatchPath
 if ($Choice -eq "2") {
     $SilentMode = $true
-    $SilentScriptPath = Join-Path $ScriptDir "launch_kering_explorer_silent.ps1"
+    $SilentScriptPath = Join-Path $ScriptDir "launch_silent.ps1"
     $TargetPath = "powershell.exe"
     $Arguments = "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$SilentScriptPath`""
     Write-Host "Mode silencieux sélectionné" -ForegroundColor Green

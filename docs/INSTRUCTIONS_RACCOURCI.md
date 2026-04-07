@@ -1,91 +1,48 @@
-# 🖥️ Créer un raccourci bureau pour RepoScan
+# Créer un raccourci bureau pour RepoScan
 
-## 🚀 Méthode Automatique (Recommandée)
+## Méthode automatique (recommandée)
 
-### Étape 1 : Ouvrir PowerShell en tant qu'Administrateur
-1. **Clic droit** sur le bouton Démarrer Windows
-2. Sélectionner **"Windows PowerShell (Admin)"** ou **"Terminal (Admin)"**
-3. Confirmer avec **"Oui"** dans la fenêtre UAC
+1. Ouvrez le dossier `scripts\windows` dans l'Explorateur Windows :
+   ```
+   \\wsl.localhost\<Distro>\home\<user>\www\RepoScan\scripts\windows
+   ```
+2. Double-cliquez sur **`setup_desktop_shortcut.bat`**
+3. Choisissez le mode de lancement :
+   - **Standard** : une console s'affiche 3 secondes au démarrage
+   - **Silencieux** : aucune console visible
 
-### Étape 2 : Naviguer vers le dossier
+Le raccourci **RepoScan** est créé sur le bureau.
+
+---
+
+## Méthode alternative (PowerShell)
+
 ```powershell
-cd "
+# Depuis le dossier scripts\windows du projet
+.\create_desktop_shortcut.ps1
 ```
 
-### Étape 3 : Exécuter le script d'installation
-```powershell
-.\setup_desktop_shortcut.bat
-```
+---
 
-**✅ C'est tout !** Le raccourci sera créé automatiquement sur votre bureau.
+## Utilisation du raccourci
+
+Double-cliquez sur le raccourci **RepoScan** sur le bureau.
+
+- Premier lancement : l'assistant de configuration s'ouvre
+- Lancements suivants : l'application démarre directement
 
 ---
 
-## 🔧 Méthode Alternative (Si la première ne fonctionne pas)
+## Dépannage
 
-### Option A : Via l'Explorateur Windows
-1. Ouvrir l'Explorateur Windows
-2. Aller à : `\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\repo-scan`
-3. **Double-cliquer** sur `setup_desktop_shortcut.bat`
-
-### Option B : Créer manuellement
-1. **Clic droit** sur le bureau → **"Nouveau"** → **"Raccourci"**
-2. Dans "Emplacement" :
-   ```
-   \\wsl.localhost\Ubuntu\home\yjaffres\www\kering\repo-scan\launch_kering_explorer.bat
-   ```
-3. Nommer le raccourci : **"RepoScan"**
-4. **Terminer**
-
----
-
-## 🎯 Utilisation du raccourci
-
-Une fois créé, **double-cliquez** sur le raccourci **"RepoScan"** sur votre bureau.
-
-### Ce qui va se passer :
-1. ✅ Une fenêtre de terminal s'ouvre
-2. ✅ L'application se lance automatiquement
-3. ✅ Vous verrez soit :
-   - **Interface graphique** (si tkinter installé)
-   - **Interface console** (fallback)
-
----
-
-## 🛠️ Dépannage
-
-### Problème : "WSL non trouvé"
-**Solution :** Assurez-vous que WSL Ubuntu est installé et démarré
+**"WSL non trouvé"**
 ```cmd
 wsl --list --verbose
 ```
+Vérifiez que votre distribution WSL est démarrée.
 
-### Problème : "Fichier non trouvé"
-**Solution :** Vérifiez que les fichiers existent :
-```cmd
-dir "\\wsl.localhost\Ubuntu\home\yjaffres\www\kering\repo-scan"
-```
+**"Fichier non trouvé"**
+Vérifiez que le chemin vers le projet est correct dans `config/config.json` → `windows.linux_project_path`.
 
-### Problème : "Permission refusée"
-**Solution :** Exécutez PowerShell en tant qu'administrateur
-
----
-
-## 📋 Fichiers créés
-
-- **`launch_kering_explorer.bat`** : Script de lancement Windows → WSL
-- **`setup_desktop_shortcut.bat`** : Installation automatique du raccourci  
-- **`create_desktop_shortcut.ps1`** : Script PowerShell alternatif
-
----
-
-## ✨ Personnalisation
-
-Vous pouvez **clic droit** → **"Propriétés"** sur le raccourci pour :
-- 🎨 Changer l'icône
-- ⚡ Modifier le raccourci clavier
-- 🖼️ Personnaliser la fenêtre
-
----
-
-**🎉 Profitez de RepoScan directement depuis le bureau !**
+**Le raccourci ne fonctionne plus après avoir déplacé le projet**
+Relancez `setup_desktop_shortcut.bat` depuis le nouvel emplacement, ou mettez à jour `windows.linux_project_path` dans `config/config.json`.

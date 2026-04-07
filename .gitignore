@@ -1,2 +1,5 @@
 venv
 config/config.json
+config/.setup_done
+scripts/windows/launch.log
+src/__pycache__/
