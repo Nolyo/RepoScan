@@ -1,5 +1,17 @@
-venv
-config/config.json
-config/.setup_done
-scripts/windows/launch.log
-src/__pycache__/
+# Frontend
+node_modules/
+dist/
+pnpm-lock.yaml
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Legacy Python (config utilisateur)
+legacy/config/config.json
+legacy/config/.setup_done
+legacy/scripts/windows/launch.log
+
+# Divers
+*.log
+.DS_Store
