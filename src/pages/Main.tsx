@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RefreshCw, Download, Settings, Moon, Sun, Monitor, Plus, Github } from "lucide-react";
@@ -19,7 +19,6 @@ import RepoTable from "../components/repo-table/RepoTable";
 import SearchBar from "../components/toolbar/SearchBar";
 import FilterBar from "../components/toolbar/FilterBar";
 import FetchSheet from "../components/toolbar/FetchSheet";
-import SettingsDialog from "../components/settings/SettingsDialog";
 import ClonePalette from "../components/clone-palette/ClonePalette";
 import { flattenRepos } from "../lib/repoUtils";
 import i18n from "../i18n";
@@ -30,8 +29,8 @@ export default function MainPage() {
   const { data: editors = [] } = useAvailableEditors();
   const { searchQuery, filters, setFetchSheetOpen } = useUiStore();
   const { theme, setTheme } = useSettingsStore();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [cloneOpen, setCloneOpen] = useState(false);
+  const navigate = useNavigate();
   const { progress, reset: resetProgress } = useFetchProgress();
   const invalidateRepos = useInvalidateRepos();
   const { t } = useTranslation();
@@ -55,11 +54,14 @@ export default function MainPage() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setCloneOpen(true);
+      } else if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        navigate("/settings");
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [navigate]);
 
   const allGitRepos = flattenRepos(repos).filter((r) => r.kind !== "parentFolder");
 
@@ -160,7 +162,7 @@ export default function MainPage() {
             <ThemeIcon className="h-4 w-4" />
           </button>
           <button
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => navigate("/settings")}
             title={t("settings.title")}
             className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
@@ -187,7 +189,7 @@ export default function MainPage() {
             <p className="text-xs">
               {t("app.noReposHint")}{" "}
               <button
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => navigate("/settings")}
                 className="underline hover:text-foreground"
               >
                 {t("app.noReposSettings")}
@@ -215,7 +217,6 @@ export default function MainPage() {
       </footer>
 
       <FetchSheet progress={progress} />
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
       <ClonePalette open={cloneOpen} onOpenChange={setCloneOpen} />
     </div>
   );

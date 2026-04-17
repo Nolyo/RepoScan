@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useSettingsStore } from "./stores/settings";
 import OnboardingPage from "./pages/Onboarding";
 import MainPage from "./pages/Main";
+import SettingsPage from "./pages/Settings";
 
 function AppRouter() {
   const { t } = useTranslation();
@@ -29,6 +30,7 @@ function AppRouter() {
     <Routes>
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/main" element={<MainPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
       <Route
         path="*"
         element={<Navigate to={isFirstRun ? "/onboarding" : "/main"} replace />}
