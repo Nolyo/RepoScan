@@ -1,0 +1,57 @@
+[package]
+name = "reposcan"
+version = "0.1.0"
+description = "Local Git repositories dashboard"
+authors = ["Nolyo"]
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "reposcan_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-os = "2"
+tauri-plugin-log = { version = "2", features = ["colored"] }
+tauri-plugin-single-instance = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+specta = { version = "=2.0.0-rc.22", features = ["derive"] }
+tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
+specta-typescript = "=0.0.9"
+
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+
+git2 = { version = "0.19", default-features = false }
+walkdir = "2"
+thiserror = "1"
+anyhow = "1"
+directories = "5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+regex = "1"
+once_cell = "1"
+dirs = "5"
+log = "0.4"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# Required for clipboard on Linux X11
+# (tauri-plugin-clipboard-manager handles this)
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
