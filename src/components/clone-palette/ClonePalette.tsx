@@ -80,7 +80,18 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
     onOpenChange(false);
   });
 
-  const { progress } = useCloneProgress();
+  const { progress, log, reset: resetProgress } = useCloneProgress();
+  const logRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) resetProgress();
+  }, [open, resetProgress]);
+
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [log]);
 
   const preferredEditor = useMemo<Editor>(() => {
     const pref = config?.preferredEditor ?? "vsCode";
@@ -267,9 +278,20 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
             )}
           </div>
 
-          {cloneMutation.isPending && progress?.message && (
-            <div className="px-3 py-1.5 border-t text-xs font-mono text-muted-foreground truncate">
-              {progress.message}
+          {(cloneMutation.isPending || log.length > 0) && (
+            <div
+              ref={logRef}
+              className="h-32 overflow-y-auto border-t bg-black/90 dark:bg-black/60 px-3 py-2 font-mono text-[11px] leading-relaxed text-zinc-200"
+            >
+              {log.length === 0 ? (
+                <div className="text-zinc-500">En attente de la sortie…</div>
+              ) : (
+                log.map((line, i) => (
+                  <div key={i} className="whitespace-pre-wrap break-words">
+                    {line}
+                  </div>
+                ))
+              )}
             </div>
           )}
         </Dialog.Content>

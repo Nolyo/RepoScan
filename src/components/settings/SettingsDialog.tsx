@@ -120,7 +120,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
               <input
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="ex. kering-technologies"
-                value={form.defaultGithubOwner}
+                value={form.defaultGithubOwner ?? ""}
                 onChange={(e) =>
                   setForm((f) => f && { ...f, defaultGithubOwner: e.target.value })
                 }
@@ -128,7 +128,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
               <label className="flex items-center gap-2 text-xs text-muted-foreground select-none mt-1.5">
                 <input
                   type="checkbox"
-                  checked={form.githubSearchAll}
+                  checked={form.githubSearchAll ?? false}
                   onChange={(e) =>
                     setForm((f) => f && { ...f, githubSearchAll: e.target.checked })
                   }
