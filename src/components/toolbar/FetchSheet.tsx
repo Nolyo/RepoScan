@@ -1,4 +1,5 @@
 import { X, CheckCircle, XCircle, Loader2, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useUiStore } from "../../stores/ui";
 import type { FetchProgressMap } from "../../hooks/useFetchProgress";
 
@@ -8,6 +9,7 @@ interface Props {
 
 export default function FetchSheet({ progress }: Props) {
   const { isFetchSheetOpen, setFetchSheetOpen } = useUiStore();
+  const { t } = useTranslation();
   const entries = Object.values(progress);
 
   if (!isFetchSheetOpen) return null;
@@ -20,9 +22,10 @@ export default function FetchSheet({ progress }: Props) {
     <div className="fixed right-0 top-0 bottom-0 w-80 border-l bg-background shadow-xl flex flex-col z-50">
       <div className="flex items-center justify-between p-4 border-b">
         <div>
-          <h3 className="text-sm font-semibold">Fetch en cours</h3>
+          <h3 className="text-sm font-semibold">{t("fetch.title")}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {done}/{total} terminés{errors > 0 && `, ${errors} erreur(s)`}
+            {t("fetch.progress", { done, total })}
+            {errors > 0 && t("fetch.progressErrors", { count: errors })}
           </p>
         </div>
         <button
@@ -61,7 +64,7 @@ export default function FetchSheet({ progress }: Props) {
         ))}
         {entries.length === 0 && (
           <p className="text-xs text-muted-foreground text-center pt-4">
-            En attente de démarrage…
+            {t("fetch.waiting")}
           </p>
         )}
       </div>

@@ -96,8 +96,21 @@ pub struct AppConfig {
     #[serde(default)]
     pub github_search_all: bool,
     #[serde(default)]
+    pub github_integrations_enabled: bool,
+    #[serde(default)]
     pub update_channel: UpdateChannel,
+    #[serde(default)]
+    pub language: Language,
     pub version: u32,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Type, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum Language {
+    #[default]
+    System,
+    En,
+    Fr,
 }
 
 fn default_github_owner() -> String {
@@ -117,7 +130,9 @@ impl Default for AppConfig {
             preferred_editor: Editor::VsCode,
             default_github_owner: default_github_owner(),
             github_search_all: false,
+            github_integrations_enabled: false,
             update_channel: UpdateChannel::default(),
+            language: Language::System,
             version: 1,
         }
     }
@@ -268,6 +283,30 @@ pub struct GhAuthStatus {
     pub logged_in: bool,
     pub gh_missing: bool,
     pub user: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Type, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum CiState {
+    Success,
+    Failure,
+    Pending,
+    Neutral,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RepoIntegration {
+    pub path: String,
+    pub owner: String,
+    pub name: String,
+    pub pr_count: Option<u32>,
+    pub pr_url: Option<String>,
+    pub ci_state: Option<CiState>,
+    pub ci_url: Option<String>,
+    pub ci_workflow_name: Option<String>,
+    pub fetched_at_iso: String,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Type, PartialEq)]

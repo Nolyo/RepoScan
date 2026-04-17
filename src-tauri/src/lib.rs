@@ -8,6 +8,7 @@ pub mod services;
 
 pub struct AppState {
     pub fetch_state: Arc<services::fetcher::FetchState>,
+    pub github_cache: Arc<services::github_cache::GithubCache>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -37,6 +38,8 @@ pub fn run() {
             commands::github::search_github_repos,
             commands::github::clone_github_repo,
             commands::github::install_repo_deps,
+            commands::github::get_repo_integrations,
+            commands::github::invalidate_github_integrations,
             commands::updater::check_for_update,
             commands::updater::install_update,
         ]);
@@ -70,6 +73,7 @@ pub fn run() {
         )
         .manage(AppState {
             fetch_state: Arc::new(services::fetcher::FetchState::default()),
+            github_cache: Arc::new(services::github_cache::GithubCache::default()),
         })
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {

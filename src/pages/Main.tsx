@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { RefreshCw, Download, Settings, Moon, Sun, Monitor, Plus } from "lucide-react";
+import { RefreshCw, Download, Settings, Moon, Sun, Monitor, Plus, Github } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { commands } from "../bindings";
 import { unwrap } from "../lib/api";
 import { useConfig, useRepos, useAvailableEditors, useInvalidateRepos } from "../hooks/useRepos";
@@ -10,6 +11,10 @@ import { useUiStore } from "../stores/ui";
 import { useSettingsStore } from "../stores/settings";
 import { useFetchProgress } from "../hooks/useFetchProgress";
 import { useStartupUpdateCheck } from "../hooks/useUpdater";
+import {
+  useGithubIntegrations,
+  useRefreshGithubIntegrations,
+} from "../hooks/useGithubIntegrations";
 import RepoTable from "../components/repo-table/RepoTable";
 import SearchBar from "../components/toolbar/SearchBar";
 import FilterBar from "../components/toolbar/FilterBar";
@@ -17,6 +22,7 @@ import FetchSheet from "../components/toolbar/FetchSheet";
 import SettingsDialog from "../components/settings/SettingsDialog";
 import ClonePalette from "../components/clone-palette/ClonePalette";
 import { flattenRepos } from "../lib/repoUtils";
+import i18n from "../i18n";
 
 export default function MainPage() {
   const { data: config, isLoading: configLoading } = useConfig();
@@ -28,7 +34,21 @@ export default function MainPage() {
   const [cloneOpen, setCloneOpen] = useState(false);
   const { progress, reset: resetProgress } = useFetchProgress();
   const invalidateRepos = useInvalidateRepos();
+  const { t } = useTranslation();
   useStartupUpdateCheck();
+
+  useEffect(() => {
+    if (config?.language) {
+      const lang =
+        config.language === "fr" ? "fr" : config.language === "en" ? "en" : null;
+      if (lang && i18n.language !== lang) {
+        i18n.changeLanguage(lang);
+      } else if (config.language === "system") {
+        const sysLang = navigator.language.startsWith("fr") ? "fr" : "en";
+        if (i18n.language !== sysLang) i18n.changeLanguage(sysLang);
+      }
+    }
+  }, [config?.language]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -43,6 +63,13 @@ export default function MainPage() {
 
   const allGitRepos = flattenRepos(repos).filter((r) => r.kind !== "parentFolder");
 
+  const {
+    byPath: integrationsByPath,
+    isFetching: integrationsLoading,
+    enabled: githubEnabled,
+  } = useGithubIntegrations(allGitRepos, config);
+  const refreshGithub = useRefreshGithubIntegrations();
+
   const fetchAllMutation = useMutation({
     mutationFn: async () => {
       resetProgress();
@@ -52,9 +79,9 @@ export default function MainPage() {
     onSuccess: (results) => {
       const failed = results.filter((r) => !r.success).length;
       if (failed > 0) {
-        toast.error(`Fetch terminé avec ${failed} erreur(s)`);
+        toast.error(i18n.t("fetch.failedCount", { count: failed }));
       } else {
-        toast.success(`${results.length} dépôts mis à jour`);
+        toast.success(i18n.t("fetch.allUpdated", { count: results.length }));
       }
       invalidateRepos();
     },
@@ -87,14 +114,14 @@ export default function MainPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setCloneOpen(true)}
-            title="Cloner un dépôt distant (Ctrl+K)"
+            title={t("clone.title") + " (Ctrl+K)"}
             className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
             <Plus className="h-4 w-4" />
           </button>
           <button
             onClick={() => refetch()}
-            title="Rafraîchir"
+            title={t("header.refreshTitle")}
             className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -102,25 +129,39 @@ export default function MainPage() {
           <button
             onClick={() => fetchAllMutation.mutate()}
             disabled={fetchAllMutation.isPending || allGitRepos.length === 0}
-            title={`Fetch all (${allGitRepos.length} repos)`}
+            title={`${t("header.fetchAll")} (${allGitRepos.length} repos)`}
             className="inline-flex items-center gap-1.5 h-8 px-3 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
           >
             <Download className="h-3.5 w-3.5" />
-            Fetch all
+            {t("header.fetchAll")}
             {allGitRepos.length > 0 && (
               <span className="ml-0.5 text-primary-foreground/70">({allGitRepos.length})</span>
             )}
           </button>
+          {githubEnabled && (
+            <button
+              onClick={() => refreshGithub.mutate()}
+              disabled={refreshGithub.isPending || integrationsLoading}
+              title={t("header.refreshGithub")}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground disabled:opacity-50"
+            >
+              <Github
+                className={`h-4 w-4 ${
+                  refreshGithub.isPending || integrationsLoading ? "animate-pulse" : ""
+                }`}
+              />
+            </button>
+          )}
           <button
             onClick={cycleTheme}
-            title="Changer le thème"
+            title={t("header.changeTheme")}
             className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
             <ThemeIcon className="h-4 w-4" />
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            title="Paramètres"
+            title={t("settings.title")}
             className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground"
           >
             <Settings className="h-4 w-4" />
@@ -138,32 +179,38 @@ export default function MainPage() {
       <div className="flex-1 overflow-hidden">
         {isLoading ? (
           <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-            Scan en cours…
+            {t("app.scanning")}
           </div>
         ) : repos.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <p className="text-sm">Aucun dépôt trouvé dans ce dossier.</p>
+            <p className="text-sm">{t("app.noRepos")}</p>
             <p className="text-xs">
-              Vérifiez le chemin dans{" "}
+              {t("app.noReposHint")}{" "}
               <button
                 onClick={() => setSettingsOpen(true)}
                 className="underline hover:text-foreground"
               >
-                les paramètres
+                {t("app.noReposSettings")}
               </button>
               .
             </p>
           </div>
         ) : (
-          <RepoTable repos={repos} editors={editors} />
+          <RepoTable
+            repos={repos}
+            editors={editors}
+            githubEnabled={githubEnabled}
+            integrationsByPath={integrationsByPath}
+            integrationsLoading={integrationsLoading}
+          />
         )}
       </div>
 
       {/* Status bar */}
       <footer className="px-4 h-6 border-t flex items-center text-xs text-muted-foreground shrink-0">
-        {allGitRepos.length} dépôts
+        {allGitRepos.length} {t("app.repos")}
         {(searchQuery || Object.values(filters).some(Boolean)) && (
-          <span className="ml-1 text-primary">— filtrés</span>
+          <span className="ml-1 text-primary">{t("app.filtered")}</span>
         )}
       </footer>
 

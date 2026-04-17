@@ -130,6 +130,22 @@ async installRepoDeps(repoPath: string, manager: DepManager) : Promise<Result<nu
     else return { status: "error", error: e  as any };
 }
 },
+async getRepoIntegrations(requests: IntegrationRequest[], forceRefresh: boolean) : Promise<Result<RepoIntegration[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_repo_integrations", { requests, forceRefresh }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async invalidateGithubIntegrations() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("invalidate_github_integrations") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async checkForUpdate() : Promise<Result<UpdateInfo | null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("check_for_update") };
@@ -159,7 +175,8 @@ async installUpdate() : Promise<Result<null, string>> {
 /** user-defined types **/
 
 export type AheadBehind = { ahead: number; behind: number; hasUpstream: boolean }
-export type AppConfig = { rootPath: string; maxScanDepth: number; showEmptyFolders: boolean; fetchTimeoutSeconds: number; fetchConcurrency: number; theme: Theme; window: WindowState; preferredEditor: Editor; defaultGithubOwner?: string; githubSearchAll?: boolean; updateChannel?: UpdateChannel; version: number }
+export type AppConfig = { rootPath: string; maxScanDepth: number; showEmptyFolders: boolean; fetchTimeoutSeconds: number; fetchConcurrency: number; theme: Theme; window: WindowState; preferredEditor: Editor; defaultGithubOwner?: string; githubSearchAll?: boolean; githubIntegrationsEnabled?: boolean; updateChannel?: UpdateChannel; language?: Language; version: number }
+export type CiState = "success" | "failure" | "pending" | "neutral" | "unknown"
 export type CloneOutcome = { clonePath: string; depManager: DepManager | null }
 export type CommitInfo = { shortHash: string; subject: string; dateIso: string }
 export type DepManager = "yarn" | "npm"
@@ -167,11 +184,14 @@ export type Editor = "vsCode" | "vsCodeInsiders" | "cursor" | "zed" | "intelliJ"
 export type FetchResult = { path: string; success: boolean; message: string }
 export type GhAuthStatus = { loggedIn: boolean; ghMissing: boolean; user: string | null }
 export type GithubRepoResult = { fullName: string; description: string | null; stars: number; url: string | null }
+export type IntegrationRequest = { path: string; remoteUrl: string | null; currentBranch: string | null }
 export type PlatformInfo = { os: string; isWsl: boolean; wslDistro: string | null; homeDir: string }
 export type RepoInfo = { path: string; relativePath: string; name: string; depth: number; kind: RepoKind; currentBranch: string | null; lastCommit: CommitInfo | null; status: RepoStatus; aheadBehind: AheadBehind | null; remoteUrl: string | null; remoteShort: string | null; children: RepoInfo[] }
+export type RepoIntegration = { path: string; owner: string; name: string; prCount: number | null; prUrl: string | null; ciState: CiState | null; ciUrl: string | null; ciWorkflowName: string | null; fetchedAtIso: string }
 export type RepoKind = "git" | "submodule" | "parentFolder"
 export type RepoStatus = { clean: boolean; modified: number; added: number; deleted: number; renamed: number; untracked: number; conflicted: number; stagedModified: number }
 export type ScanPreview = { reposCount: number; foldersCount: number; sample: string[] }
+export type Language = "system" | "en" | "fr"
 export type Theme = "system" | "light" | "dark"
 export type UpdateChannel = "stable" | "beta"
 export type UpdateInfo = { version: string; currentVersion: string; date: string | null; body: string | null }

@@ -2,13 +2,13 @@ import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import { useSettingsStore } from "./stores/settings";
 import OnboardingPage from "./pages/Onboarding";
 import MainPage from "./pages/Main";
 
 function AppRouter() {
-  // Always refetch on mount to avoid relying on a stale cache when the
-  // config file gets deleted/recreated outside the app.
+  const { t } = useTranslation();
   const { data: isFirstRun, isLoading } = useQuery({
     queryKey: ["is_first_run"],
     queryFn: () => invoke<boolean>("is_first_run"),
@@ -20,7 +20,7 @@ function AppRouter() {
   if (isLoading || isFirstRun === undefined) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="text-muted-foreground text-sm">Chargement…</div>
+        <div className="text-muted-foreground text-sm">{t("app.loading")}</div>
       </div>
     );
   }

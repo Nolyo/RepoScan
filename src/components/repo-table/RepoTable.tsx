@@ -9,11 +9,13 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { ChevronRight, ChevronDown, GitBranch, Folder } from "lucide-react";
-import type { RepoInfo, Editor } from "../../bindings";
+import { useTranslation } from "react-i18next";
+import type { RepoInfo, Editor, RepoIntegration } from "../../bindings";
 import { useUiStore } from "../../stores/ui";
 import { filterRepos } from "../../lib/repoUtils";
 import { formatRelativeDate } from "../../lib/utils";
 import { StatusBadge, SyncBadge } from "./StatusBadge";
+import GithubBadges from "./GithubBadges";
 import RepoContextMenu from "../context-menu/RepoContextMenu";
 import { cn } from "../../lib/utils";
 import { commands } from "../../bindings";
@@ -21,6 +23,9 @@ import { commands } from "../../bindings";
 interface Props {
   repos: RepoInfo[];
   editors: Editor[];
+  githubEnabled?: boolean;
+  integrationsByPath?: Record<string, RepoIntegration>;
+  integrationsLoading?: boolean;
 }
 
 function flattenWithState(
@@ -38,13 +43,19 @@ function flattenWithState(
   return result;
 }
 
-export default function RepoTable({ repos, editors }: Props) {
+export default function RepoTable({
+  repos,
+  editors,
+  githubEnabled = false,
+  integrationsByPath,
+  integrationsLoading = false,
+}: Props) {
   const { searchQuery, filters, expandedPaths, toggleExpanded } = useUiStore();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const { t } = useTranslation();
 
   const visibleRepos = useMemo(() => {
     if (searchQuery || Object.values(filters).some(Boolean)) {
-      // When filtering, show flat list of matched repos only
       const allFlat = flattenWithState(repos, new Set(repos.flatMap(getAllPaths)));
       return filterRepos(allFlat, searchQuery, filters);
     }
@@ -56,7 +67,7 @@ export default function RepoTable({ repos, editors }: Props) {
       {
         id: "name",
         accessorKey: "name",
-        header: "Dépôt",
+        header: t("table.colRepo"),
         size: 280,
         cell: ({ row }) => {
           const repo = row.original;
@@ -109,7 +120,7 @@ export default function RepoTable({ repos, editors }: Props) {
       {
         id: "currentBranch",
         accessorKey: "currentBranch",
-        header: "Branche",
+        header: t("table.colBranch"),
         size: 140,
         cell: ({ row }) => {
           const branch = row.original.currentBranch;
@@ -123,7 +134,7 @@ export default function RepoTable({ repos, editors }: Props) {
       },
       {
         id: "status",
-        header: "Statut",
+        header: t("table.colStatus"),
         size: 130,
         cell: ({ row }) => {
           const repo = row.original;
@@ -133,7 +144,7 @@ export default function RepoTable({ repos, editors }: Props) {
       },
       {
         id: "lastCommit",
-        header: "Dernier commit",
+        header: t("table.colLastCommit"),
         size: 260,
         cell: ({ row }) => {
           const commit = row.original.lastCommit;
@@ -148,7 +159,7 @@ export default function RepoTable({ repos, editors }: Props) {
       },
       {
         id: "date",
-        header: "Date",
+        header: t("table.colDate"),
         size: 90,
         accessorFn: (row) => row.lastCommit?.dateIso ?? "",
         cell: ({ row }) => {
@@ -163,7 +174,7 @@ export default function RepoTable({ repos, editors }: Props) {
       },
       {
         id: "aheadBehind",
-        header: "Sync",
+        header: t("table.colSync"),
         size: 80,
         cell: ({ row }) => {
           const repo = row.original;
@@ -174,7 +185,7 @@ export default function RepoTable({ repos, editors }: Props) {
       {
         id: "remoteShort",
         accessorKey: "remoteShort",
-        header: "Remote",
+        header: t("table.colRemote"),
         size: 160,
         cell: ({ row }) => {
           const remote = row.original.remoteShort;
@@ -186,8 +197,28 @@ export default function RepoTable({ repos, editors }: Props) {
           );
         },
       },
+      ...(githubEnabled
+        ? [
+            {
+              id: "github",
+              header: t("table.colGithub"),
+              size: 110,
+              cell: ({ row }) => {
+                const repo = row.original;
+                if (repo.kind === "parentFolder") return null;
+                return (
+                  <GithubBadges
+                    integration={integrationsByPath?.[repo.path]}
+                    loading={integrationsLoading}
+                  />
+                );
+              },
+            } satisfies ColumnDef<RepoInfo>,
+          ]
+        : []),
     ],
-    [expandedPaths, toggleExpanded],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [expandedPaths, toggleExpanded, githubEnabled, integrationsByPath, integrationsLoading, t],
   );
 
   const table = useReactTable({
@@ -260,7 +291,7 @@ export default function RepoTable({ repos, editors }: Props) {
         </table>
         {visibleRepos.length === 0 && (
           <div className="flex justify-center py-8 text-sm text-muted-foreground">
-            Aucun dépôt ne correspond aux filtres.
+            {t("app.noRepos")}
           </div>
         )}
       </div>

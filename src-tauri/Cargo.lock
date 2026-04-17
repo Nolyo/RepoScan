@@ -3678,7 +3678,7 @@ dependencies = [
 
 [[package]]
 name = "reposcan"
-version = "0.1.0"
+version = "0.1.0-beta.4"
 dependencies = [
  "anyhow",
  "directories",

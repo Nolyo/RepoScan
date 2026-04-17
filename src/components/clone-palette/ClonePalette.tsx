@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Star, Loader2, AlertCircle, GitBranch } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { commands, type Editor, type GithubRepoResult } from "../../bindings";
 import { unwrap } from "../../lib/api";
 import { useConfig, useAvailableEditors } from "../../hooks/useRepos";
@@ -25,12 +26,13 @@ const EDITOR_LABELS: Record<Editor, string> = {
   sublime: "Sublime Text",
   neovim: "Neovim",
   vim: "Vim",
-  system: "Système",
+  system: "System",
 };
 
 export default function ClonePalette({ open, onOpenChange }: Props) {
   const { data: config } = useConfig();
   const { data: availableEditors = [] } = useAvailableEditors();
+  const { t } = useTranslation();
 
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
@@ -51,8 +53,8 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
   }, [open, config?.githubSearchAll]);
 
   useEffect(() => {
-    const t = setTimeout(() => setQuery(rawQuery), 250);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setQuery(rawQuery), 250);
+    return () => clearTimeout(timer);
   }, [rawQuery]);
 
   const owner = searchAll ? null : config?.defaultGithubOwner?.trim() || null;
@@ -143,7 +145,7 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
           }}
           className="fixed left-1/2 top-[20%] -translate-x-1/2 z-50 w-full max-w-xl rounded-xl border bg-background shadow-xl overflow-hidden focus:outline-none"
         >
-          <Dialog.Title className="sr-only">Cloner un dépôt distant</Dialog.Title>
+          <Dialog.Title className="sr-only">{t("clone.title")}</Dialog.Title>
 
           <div className="flex items-center gap-2 px-3 py-2 border-b">
             <Search className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -154,8 +156,8 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
               onKeyDown={onKeyDown}
               placeholder={
                 searchAll
-                  ? "Chercher sur tout GitHub…"
-                  : `Chercher dans ${owner ?? "…"}`
+                  ? t("clone.searchAllPlaceholder")
+                  : t("clone.searchOrgPlaceholder", { org: owner ?? "…" })
               }
               className="flex-1 h-8 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
               disabled={cloneMutation.isPending || ghMissing || !!notLoggedIn}
@@ -168,30 +170,22 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
                 className="h-3.5 w-3.5"
                 disabled={cloneMutation.isPending}
               />
-              tout GitHub
+              {t("clone.searchAll")}
             </label>
           </div>
 
           {ghMissing && (
-            <ErrorBanner>
-              La CLI <code className="px-1 rounded bg-muted font-mono">gh</code> n'est pas
-              installée. Installe-la puis réessaie (voir{" "}
-              <span className="font-mono">github.com/cli/cli</span>).
-            </ErrorBanner>
+            <ErrorBanner>{t("clone.ghMissing")}</ErrorBanner>
           )}
           {notLoggedIn && (
-            <ErrorBanner>
-              Pas authentifié sur GitHub. Lance{" "}
-              <code className="px-1 rounded bg-muted font-mono">gh auth login</code> dans un
-              terminal puis rouvre cette palette.
-            </ErrorBanner>
+            <ErrorBanner>{t("clone.notLoggedIn")}</ErrorBanner>
           )}
 
           <div ref={listRef} className="max-h-[340px] overflow-y-auto">
             {search.isFetching && results.length === 0 && (
               <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Recherche…
+                {t("clone.searching")}
               </div>
             )}
             {search.error && (
@@ -206,7 +200,7 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
               results.length === 0 &&
               authStatus.data?.loggedIn && (
                 <div className="px-3 py-4 text-sm text-muted-foreground text-center">
-                  Aucun résultat pour « {query} »
+                  {t("clone.noResults", { query })}
                 </div>
               )}
             {results.map((repo, idx) => (
@@ -250,7 +244,7 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
                   onChange={(e) => setInstallDeps(e.target.checked)}
                   disabled={cloneMutation.isPending}
                 />
-                yarn/npm install
+                {t("clone.installDeps")}
               </label>
               <label className="flex items-center gap-1.5 select-none">
                 <input
@@ -259,21 +253,21 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
                   onChange={(e) => setOpenEditor(e.target.checked)}
                   disabled={cloneMutation.isPending || availableEditors.length === 0}
                 />
-                ouvrir dans {EDITOR_LABELS[preferredEditor]}
+                {t("clone.openEditor", { editor: EDITOR_LABELS[preferredEditor] })}
               </label>
             </div>
             {cloneMutation.isPending ? (
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 {progress?.phase === "installing"
-                  ? "Installation…"
+                  ? t("clone.installing")
                   : progress?.phase === "cloning"
-                    ? "Clonage…"
-                    : "En cours…"}
+                    ? t("clone.cloning")
+                    : t("clone.inProgress")}
               </span>
             ) : (
               <span className="text-muted-foreground">
-                ↑↓ pour naviguer · ↵ pour cloner
+                {t("clone.navigate")}
               </span>
             )}
           </div>
@@ -284,7 +278,7 @@ export default function ClonePalette({ open, onOpenChange }: Props) {
               className="h-32 overflow-y-auto border-t bg-black/90 dark:bg-black/60 px-3 py-2 font-mono text-[11px] leading-relaxed text-zinc-200"
             >
               {log.length === 0 ? (
-                <div className="text-zinc-500">En attente de la sortie…</div>
+                <div className="text-zinc-500">{t("clone.waiting")}</div>
               ) : (
                 log.map((line, i) => (
                   <div key={i} className="whitespace-pre-wrap break-words">

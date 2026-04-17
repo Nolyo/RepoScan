@@ -4,15 +4,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { X, FolderOpen, RefreshCw } from "lucide-react";
-import { commands, type AppConfig, type UpdateChannel } from "../../bindings";
+import { useTranslation } from "react-i18next";
+import { commands, type AppConfig, type UpdateChannel, type Language } from "../../bindings";
 import { useConfig } from "../../hooks/useRepos";
 import { useAppVersion, runUpdateCheck } from "../../hooks/useUpdater";
 import { unwrap } from "../../lib/api";
 import { useSettingsStore } from "../../stores/settings";
+import i18n from "../../i18n";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function resolveLanguage(lang: Language | undefined): string {
+  if (lang === "fr") return "fr";
+  if (lang === "en") return "en";
+  return navigator.language.startsWith("fr") ? "fr" : "en";
 }
 
 export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
@@ -21,6 +29,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
   const { theme, setTheme } = useSettingsStore();
   const { data: appVersion } = useAppVersion();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -29,8 +38,9 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
 
   const saveMutation = useMutation({
     mutationFn: async (c: AppConfig) => unwrap(await commands.saveConfig(c)),
-    onSuccess: () => {
-      toast.success("Paramètres sauvegardés");
+    onSuccess: (_, saved) => {
+      toast.success(t("settings.saved"));
+      i18n.changeLanguage(resolveLanguage(saved.language));
       qc.invalidateQueries({ queryKey: ["config"] });
       qc.invalidateQueries({ queryKey: ["repos"] });
       onOpenChange(false);
@@ -51,7 +61,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md rounded-xl border bg-background shadow-xl p-6 focus:outline-none">
           <div className="flex items-center justify-between mb-5">
-            <Dialog.Title className="text-base font-semibold">Paramètres</Dialog.Title>
+            <Dialog.Title className="text-base font-semibold">{t("settings.title")}</Dialog.Title>
             <Dialog.Close className="text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </Dialog.Close>
@@ -59,7 +69,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
 
           <div className="space-y-4">
             {/* Root path */}
-            <Field label="Dossier de repos">
+            <Field label={t("settings.repoFolder")}>
               <div className="flex gap-2">
                 <input
                   className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -76,7 +86,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
             </Field>
 
             {/* Max scan depth */}
-            <Field label={`Profondeur de scan : ${form.maxScanDepth}`}>
+            <Field label={t("settings.scanDepth", { count: form.maxScanDepth })}>
               <input
                 type="range"
                 min={1}
@@ -90,7 +100,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
             </Field>
 
             {/* Fetch concurrency */}
-            <Field label={`Fetch simultanés : ${form.fetchConcurrency}`}>
+            <Field label={t("settings.fetchConcurrency", { count: form.fetchConcurrency })}>
               <input
                 type="range"
                 min={1}
@@ -104,7 +114,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
             </Field>
 
             {/* Fetch timeout */}
-            <Field label={`Timeout fetch : ${form.fetchTimeoutSeconds}s`}>
+            <Field label={t("settings.fetchTimeout", { count: form.fetchTimeoutSeconds })}>
               <input
                 type="range"
                 min={5}
@@ -119,10 +129,10 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
             </Field>
 
             {/* GitHub org */}
-            <Field label="Organisation GitHub par défaut">
+            <Field label={t("settings.githubOrg")}>
               <input
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="ex. kering-technologies"
+                placeholder={t("settings.githubOrgPlaceholder")}
                 value={form.defaultGithubOwner ?? ""}
                 onChange={(e) =>
                   setForm((f) => f && { ...f, defaultGithubOwner: e.target.value })
@@ -136,12 +146,24 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
                     setForm((f) => f && { ...f, githubSearchAll: e.target.checked })
                   }
                 />
-                Chercher sur tout GitHub par défaut
+                {t("settings.githubSearchAll")}
+              </label>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground select-none mt-1.5">
+                <input
+                  type="checkbox"
+                  checked={form.githubIntegrationsEnabled ?? false}
+                  onChange={(e) =>
+                    setForm(
+                      (f) => f && { ...f, githubIntegrationsEnabled: e.target.checked },
+                    )
+                  }
+                />
+                {t("settings.githubShowPR")}
               </label>
             </Field>
 
             {/* Update channel */}
-            <Field label="Canal de mise à jour">
+            <Field label={t("settings.updateChannel")}>
               <div className="flex gap-2">
                 {(["stable", "beta"] as const).map((ch) => {
                   const current: UpdateChannel = form.updateChannel ?? "stable";
@@ -155,13 +177,13 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
                           : "border-input hover:bg-accent"
                       }`}
                     >
-                      {ch === "stable" ? "Stable" : "Bêta"}
+                      {ch === "stable" ? t("settings.updateChannelStable") : t("settings.updateChannelBeta")}
                     </button>
                   );
                 })}
               </div>
               <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                <span>Version installée : {appVersion ?? "…"}</span>
+                <span>{t("settings.version", { version: appVersion ?? "…" })}</span>
                 <button
                   onClick={async () => {
                     setCheckingUpdate(true);
@@ -175,41 +197,71 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
                   className="inline-flex items-center gap-1 hover:text-foreground disabled:opacity-50"
                 >
                   <RefreshCw className={`h-3 w-3 ${checkingUpdate ? "animate-spin" : ""}`} />
-                  Vérifier maintenant
+                  {t("settings.checkUpdate")}
                 </button>
               </div>
             </Field>
 
             {/* Theme */}
-            <Field label="Thème">
+            <Field label={t("settings.theme")}>
               <div className="flex gap-2">
-                {(["system", "light", "dark"] as const).map((t) => (
+                {(["system", "light", "dark"] as const).map((th) => (
                   <button
-                    key={t}
-                    onClick={() => setTheme(t)}
+                    key={th}
+                    onClick={() => setTheme(th)}
                     className={`flex-1 h-8 text-xs rounded-md border capitalize ${
-                      theme === t
+                      theme === th
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-input hover:bg-accent"
                     }`}
                   >
-                    {t === "system" ? "Système" : t === "light" ? "Clair" : "Sombre"}
+                    {th === "system"
+                      ? t("settings.themeSystem")
+                      : th === "light"
+                      ? t("settings.themeLight")
+                      : t("settings.themeDark")}
                   </button>
                 ))}
+              </div>
+            </Field>
+
+            {/* Language */}
+            <Field label={t("settings.language")}>
+              <div className="flex gap-2">
+                {(["system", "en", "fr"] as const).map((lang) => {
+                  const current: Language = form.language ?? "system";
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => setForm((f) => f && { ...f, language: lang })}
+                      className={`flex-1 h-8 text-xs rounded-md border ${
+                        current === lang
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-input hover:bg-accent"
+                      }`}
+                    >
+                      {lang === "system"
+                        ? t("settings.langSystem")
+                        : lang === "en"
+                        ? t("settings.langEn")
+                        : t("settings.langFr")}
+                    </button>
+                  );
+                })}
               </div>
             </Field>
           </div>
 
           <div className="flex justify-end gap-2 mt-6">
             <Dialog.Close className="h-9 px-4 text-sm rounded-md border border-input bg-background hover:bg-accent">
-              Annuler
+              {t("settings.cancel")}
             </Dialog.Close>
             <button
               onClick={() => saveMutation.mutate(form)}
               disabled={saveMutation.isPending}
               className="h-9 px-4 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {saveMutation.isPending ? "Sauvegarde…" : "Sauvegarder"}
+              {saveMutation.isPending ? t("settings.saving") : t("settings.save")}
             </button>
           </div>
         </Dialog.Content>

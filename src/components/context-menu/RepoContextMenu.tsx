@@ -1,5 +1,6 @@
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   FolderOpen, Code, Globe, Copy, Terminal, RefreshCw, Download
 } from "lucide-react";
@@ -8,6 +9,7 @@ import { commands } from "../../bindings";
 import { useInvalidateRepos } from "../../hooks/useRepos";
 import { unwrap } from "../../lib/api";
 import { cn } from "../../lib/utils";
+import i18n from "../../i18n";
 
 interface Props {
   repo: RepoInfo;
@@ -32,6 +34,7 @@ const EDITOR_LABELS: Record<string, string> = {
 
 export default function RepoContextMenu({ repo, editors, children }: Props) {
   const invalidateRepos = useInvalidateRepos();
+  const { t } = useTranslation();
   const isFolder = repo.kind === "parentFolder";
 
   const openExplorer = () => {
@@ -50,7 +53,7 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
     if (!repo.remoteUrl) return;
     try {
       unwrap(await commands.openRemoteUrl(repo.remoteUrl));
-      toast.success("Ouvert dans le navigateur");
+      toast.success(i18n.t("contextMenu.openedBrowser"));
     } catch (e) {
       toast.error(String(e));
     }
@@ -59,7 +62,7 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
   const copyPath = async () => {
     try {
       unwrap(await commands.copyPath(repo.path));
-      toast.success("Chemin copié");
+      toast.success(i18n.t("contextMenu.pathCopied"));
     } catch (e) {
       toast.error(String(e));
     }
@@ -68,7 +71,7 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
   const copyCodeCmd = async () => {
     try {
       unwrap(await commands.copyCodeCommand(repo.path));
-      toast.success("Commande copiée");
+      toast.success(i18n.t("contextMenu.commandCopied"));
     } catch (e) {
       toast.error(String(e));
     }
@@ -85,7 +88,7 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
         loading: `Fetch ${repo.name}…`,
         success: (r) => {
           invalidateRepos();
-          return r.message || `${repo.name} mis à jour`;
+          return r.message || i18n.t("contextMenu.repoUpdated", { name: repo.name });
         },
         error: (e) => String(e),
       },
@@ -100,7 +103,7 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
           className="z-50 min-w-[180px] rounded-md border bg-popover p-1 shadow-md text-popover-foreground text-sm"
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
-          <MenuItem icon={FolderOpen} label="Ouvrir dans l'explorateur" onSelect={openExplorer} />
+          <MenuItem icon={FolderOpen} label={t("contextMenu.openExplorer")} onSelect={openExplorer} />
 
           {!isFolder && editors.length > 0 && (
             <>
@@ -109,7 +112,7 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
                 <MenuItem
                   key={editor}
                   icon={Code}
-                  label={`Ouvrir dans ${EDITOR_LABELS[editor] ?? editor}`}
+                  label={t("contextMenu.openEditor", { editor: EDITOR_LABELS[editor] ?? editor })}
                   onSelect={() => openEditor(editor)}
                 />
               ))}
@@ -119,21 +122,21 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
           {!isFolder && repo.remoteUrl && (
             <>
               <ContextMenu.Separator className="my-1 h-px bg-muted" />
-              <MenuItem icon={Globe} label="Ouvrir sur GitHub/GitLab" onSelect={openRemote} />
+              <MenuItem icon={Globe} label={t("contextMenu.openGithub")} onSelect={openRemote} />
             </>
           )}
 
           <ContextMenu.Separator className="my-1 h-px bg-muted" />
-          <MenuItem icon={Copy} label="Copier le chemin" onSelect={copyPath} />
+          <MenuItem icon={Copy} label={t("contextMenu.copyPath")} onSelect={copyPath} />
           {!isFolder && (
-            <MenuItem icon={Terminal} label="Copier commande code" onSelect={copyCodeCmd} />
+            <MenuItem icon={Terminal} label={t("contextMenu.copyCommand")} onSelect={copyCodeCmd} />
           )}
 
           {!isFolder && (
             <>
               <ContextMenu.Separator className="my-1 h-px bg-muted" />
-              <MenuItem icon={RefreshCw} label="Rafraîchir" onSelect={refresh} />
-              <MenuItem icon={Download} label="Fetch" onSelect={fetchRepo} />
+              <MenuItem icon={RefreshCw} label={t("contextMenu.refresh")} onSelect={refresh} />
+              <MenuItem icon={Download} label={t("contextMenu.fetch")} onSelect={fetchRepo} />
             </>
           )}
         </ContextMenu.Content>

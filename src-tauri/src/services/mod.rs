@@ -3,5 +3,7 @@ pub mod external;
 pub mod fetcher;
 pub mod git_info;
 pub mod github;
+pub mod github_cache;
+pub mod github_integrations;
 pub mod platform;
 pub mod scanner;

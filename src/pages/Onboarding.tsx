@@ -4,17 +4,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { FolderOpen, GitBranch, ArrowRight, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { commands, type AppConfig } from "../bindings";
 import { unwrap } from "../lib/api";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [rootPath, setRootPath] = useState("");
   const [maxDepth, setMaxDepth] = useState(3);
 
-  // Auto-detect default path
   const { data: defaultPath } = useQuery({
     queryKey: ["default_repo_path"],
     queryFn: commands.detectDefaultRepoPath,
@@ -25,7 +26,6 @@ export default function OnboardingPage() {
     if (defaultPath && !rootPath) setRootPath(defaultPath);
   }, [defaultPath, rootPath]);
 
-  // Preview scan
   const { data: preview, isLoading: previewLoading } = useQuery({
     queryKey: ["preview", rootPath, maxDepth],
     queryFn: () => commands.previewScan(rootPath, maxDepth),
@@ -37,7 +37,7 @@ export default function OnboardingPage() {
     mutationFn: async (config: AppConfig) => unwrap(await commands.saveConfig(config)),
     onSuccess: () => {
       qc.setQueryData(["is_first_run"], false);
-      toast.success("Configuration enregistrée !");
+      toast.success(t("onboarding.saved"));
       navigate("/main", { replace: true });
     },
     onError: (e) => toast.error(String(e)),
@@ -67,8 +67,8 @@ export default function OnboardingPage() {
 
   const steps = [
     {
-      title: "Bienvenue dans RepoScan",
-      subtitle: "Votre tableau de bord de dépôts Git locaux",
+      title: t("onboarding.step0Title"),
+      subtitle: t("onboarding.step0Subtitle"),
       content: (
         <div className="flex flex-col items-center gap-6 py-6">
           <div className="rounded-full bg-primary/10 p-6">
@@ -76,19 +76,18 @@ export default function OnboardingPage() {
           </div>
           <div className="max-w-sm text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              RepoScan scanne vos dossiers locaux et affiche l'état de chaque dépôt Git : branche,
-              statut, dernier commit, avance/retard sur le remote.
+              {t("onboarding.step0Desc1")}
             </p>
             <p className="text-sm text-muted-foreground">
-              Fetch en parallèle, ouverture directe dans votre éditeur, copie de chemin… tout en un clic.
+              {t("onboarding.step0Desc2")}
             </p>
           </div>
         </div>
       ),
     },
     {
-      title: "Dossier à scanner",
-      subtitle: "Choisissez votre dossier racine contenant vos projets",
+      title: t("onboarding.step1Title"),
+      subtitle: t("onboarding.step1Subtitle"),
       content: (
         <div className="flex flex-col gap-5">
           <div className="flex gap-2">
@@ -96,20 +95,20 @@ export default function OnboardingPage() {
               className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={rootPath}
               onChange={(e) => setRootPath(e.target.value)}
-              placeholder="/home/you/www"
+              placeholder={t("onboarding.step1Placeholder")}
             />
             <button
               onClick={pickFolder}
               className="inline-flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground text-sm"
             >
               <FolderOpen className="h-4 w-4" />
-              Parcourir
+              {t("onboarding.step1Browse")}
             </button>
           </div>
 
           <div className="flex items-center gap-3">
             <label className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-              Profondeur max :
+              {t("onboarding.step1DepthLabel")}
             </label>
             <input
               type="range"
@@ -125,12 +124,14 @@ export default function OnboardingPage() {
           {rootPath && (
             <div className="rounded-lg border bg-muted/30 p-4 text-sm space-y-1 min-h-[72px]">
               {previewLoading ? (
-                <span className="text-muted-foreground">Analyse en cours…</span>
+                <span className="text-muted-foreground">{t("onboarding.step1Scanning")}</span>
               ) : preview ? (
                 <>
                   <p className="font-medium">
-                    <span className="text-primary">{preview.reposCount}</span> dépôts trouvés
-                    dans <span className="text-primary">{preview.foldersCount}</span> dossiers
+                    <span className="text-primary">{preview.reposCount}</span>{" "}
+                    {t("onboarding.step1ReposLabel", { count: preview.reposCount })}{" "}
+                    <span className="text-primary">{preview.foldersCount}</span>{" "}
+                    {t("onboarding.step1FoldersLabel", { count: preview.foldersCount })}
                   </p>
                   {preview.sample.length > 0 && (
                     <ul className="text-muted-foreground space-y-0.5 pt-1">
@@ -140,13 +141,17 @@ export default function OnboardingPage() {
                         </li>
                       ))}
                       {preview.reposCount > preview.sample.length && (
-                        <li className="text-xs">…et {preview.reposCount - preview.sample.length} autres</li>
+                        <li className="text-xs">
+                          {t("onboarding.step1MoreRepos", {
+                            count: preview.reposCount - preview.sample.length,
+                          })}
+                        </li>
                       )}
                     </ul>
                   )}
                 </>
               ) : (
-                <span className="text-muted-foreground">Saisissez un chemin valide</span>
+                <span className="text-muted-foreground">{t("onboarding.step1EnterPath")}</span>
               )}
             </div>
           )}
@@ -154,8 +159,8 @@ export default function OnboardingPage() {
       ),
     },
     {
-      title: "Tout est prêt",
-      subtitle: "Votre configuration a été enregistrée",
+      title: t("onboarding.step2Title"),
+      subtitle: t("onboarding.step2Subtitle"),
       content: (
         <div className="flex flex-col items-center gap-6 py-6">
           <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-6">
@@ -163,9 +168,10 @@ export default function OnboardingPage() {
           </div>
           <div className="max-w-sm text-center text-sm text-muted-foreground space-y-1">
             <p>
-              Dossier : <span className="font-mono text-foreground break-all">{rootPath}</span>
+              {t("onboarding.step2Folder")}{" "}
+              <span className="font-mono text-foreground break-all">{rootPath}</span>
             </p>
-            <p>Profondeur de scan : {maxDepth}</p>
+            <p>{t("onboarding.step2Depth", { count: maxDepth })}</p>
           </div>
         </div>
       ),
@@ -205,7 +211,7 @@ export default function OnboardingPage() {
             disabled={step === 0}
             className="h-9 px-4 text-sm rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:pointer-events-none"
           >
-            Retour
+            {t("onboarding.back")}
           </button>
           <button
             onClick={() => {
@@ -218,8 +224,12 @@ export default function OnboardingPage() {
             disabled={!canNext || saveMutation.isPending}
             className="inline-flex items-center gap-2 h-9 px-4 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
           >
-            {isLast ? (saveMutation.isPending ? "Enregistrement…" : "Lancer RepoScan") : (
-              <>Suivant <ArrowRight className="h-4 w-4" /></>
+            {isLast ? (
+              saveMutation.isPending ? t("onboarding.saving") : t("onboarding.launch")
+            ) : (
+              <>
+                {t("onboarding.next")} <ArrowRight className="h-4 w-4" />
+              </>
             )}
           </button>
         </div>

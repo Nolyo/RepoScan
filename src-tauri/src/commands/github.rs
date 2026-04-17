@@ -1,11 +1,28 @@
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
-use tauri::{AppHandle, Emitter};
+use serde::{Deserialize, Serialize};
+use specta::Type;
+use tauri::{AppHandle, Emitter, State};
 
 use crate::domain::types::{
     ClonePhase, CloneOutcome, CloneProgress, DepManager, GhAuthStatus, GithubRepoResult,
+    RepoIntegration,
+};
+use crate::services::github_cache::DEFAULT_TTL_SECS;
+use crate::services::github_integrations::{
+    self, parse_github_remote, RepoRef,
 };
 use crate::services::github;
+use crate::AppState;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct IntegrationRequest {
+    pub path: String,
+    pub remote_url: Option<String>,
+    pub current_branch: Option<String>,
+}
 
 #[tauri::command]
 #[specta::specta]
@@ -92,6 +109,66 @@ pub async fn install_repo_deps(
             Err(msg)
         }
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_repo_integrations(
+    state: State<'_, AppState>,
+    requests: Vec<IntegrationRequest>,
+    force_refresh: bool,
+) -> Result<Vec<RepoIntegration>, String> {
+    let cache = state.github_cache.clone();
+    let ttl = Duration::from_secs(DEFAULT_TTL_SECS);
+
+    if force_refresh {
+        cache.invalidate_all().await;
+    }
+
+    let mut cached: Vec<RepoIntegration> = Vec::new();
+    let mut to_fetch: Vec<RepoRef> = Vec::new();
+
+    for req in requests {
+        let Some(remote) = req.remote_url.as_deref() else {
+            continue;
+        };
+        let Some((owner, name)) = parse_github_remote(remote) else {
+            continue;
+        };
+
+        if !force_refresh {
+            if let Some(hit) = cache.get_fresh(&req.path, ttl).await {
+                cached.push(hit);
+                continue;
+            }
+        }
+
+        to_fetch.push(RepoRef {
+            path: req.path,
+            owner,
+            name,
+            branch: req.current_branch,
+        });
+    }
+
+    let fresh = github_integrations::fetch_integrations(to_fetch)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    for item in &fresh {
+        cache.put(item.path.clone(), item.clone()).await;
+    }
+
+    let mut out = cached;
+    out.extend(fresh);
+    Ok(out)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn invalidate_github_integrations(state: State<'_, AppState>) -> Result<(), String> {
+    state.github_cache.invalidate_all().await;
+    Ok(())
 }
 
 fn emit_progress(app: &AppHandle, full_name: &str, phase: ClonePhase, message: Option<String>) {
