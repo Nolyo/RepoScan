@@ -91,7 +91,15 @@ pub struct AppConfig {
     pub theme: Theme,
     pub window: WindowState,
     pub preferred_editor: Editor,
+    #[serde(default = "default_github_owner")]
+    pub default_github_owner: String,
+    #[serde(default)]
+    pub github_search_all: bool,
     pub version: u32,
+}
+
+fn default_github_owner() -> String {
+    "kering-technologies".to_string()
 }
 
 impl Default for AppConfig {
@@ -105,6 +113,8 @@ impl Default for AppConfig {
             theme: Theme::System,
             window: WindowState::default(),
             preferred_editor: Editor::VsCode,
+            default_github_owner: default_github_owner(),
+            github_search_all: false,
             version: 1,
         }
     }
@@ -230,4 +240,54 @@ pub struct PlatformInfo {
     pub is_wsl: bool,
     pub wsl_distro: Option<String>,
     pub home_dir: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct GithubRepoResult {
+    pub full_name: String,
+    pub description: Option<String>,
+    pub stars: u32,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct GhAuthStatus {
+    pub logged_in: bool,
+    pub gh_missing: bool,
+    pub user: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Type, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum DepManager {
+    Yarn,
+    Npm,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneOutcome {
+    pub clone_path: String,
+    pub dep_manager: Option<DepManager>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct CloneProgress {
+    pub full_name: String,
+    pub phase: ClonePhase,
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum ClonePhase {
+    Cloning,
+    Cloned,
+    Installing,
+    Installed,
+    Done,
+    Error,
 }

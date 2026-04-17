@@ -102,6 +102,33 @@ async detectDefaultRepoPath() : Promise<string> {
 },
 async platformInfo() : Promise<PlatformInfo> {
     return await TAURI_INVOKE("platform_info");
+},
+async checkGhAuth() : Promise<GhAuthStatus> {
+    return await TAURI_INVOKE("check_gh_auth");
+},
+async searchGithubRepos(query: string, owner: string | null, limit: number) : Promise<Result<GithubRepoResult[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("search_github_repos", { query, owner, limit }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async cloneGithubRepo(fullName: string, destParent: string) : Promise<Result<CloneOutcome, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clone_github_repo", { fullName, destParent }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async installRepoDeps(repoPath: string, manager: DepManager) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("install_repo_deps", { repoPath, manager }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -116,10 +143,14 @@ async platformInfo() : Promise<PlatformInfo> {
 /** user-defined types **/
 
 export type AheadBehind = { ahead: number; behind: number; hasUpstream: boolean }
-export type AppConfig = { rootPath: string; maxScanDepth: number; showEmptyFolders: boolean; fetchTimeoutSeconds: number; fetchConcurrency: number; theme: Theme; window: WindowState; preferredEditor: Editor; version: number }
+export type AppConfig = { rootPath: string; maxScanDepth: number; showEmptyFolders: boolean; fetchTimeoutSeconds: number; fetchConcurrency: number; theme: Theme; window: WindowState; preferredEditor: Editor; defaultGithubOwner?: string; githubSearchAll?: boolean; version: number }
+export type CloneOutcome = { clonePath: string; depManager: DepManager | null }
 export type CommitInfo = { shortHash: string; subject: string; dateIso: string }
+export type DepManager = "yarn" | "npm"
 export type Editor = "vsCode" | "vsCodeInsiders" | "cursor" | "zed" | "intelliJ" | "webStorm" | "pyCharm" | "rider" | "fleet" | "sublime" | "neovim" | "vim" | "system"
 export type FetchResult = { path: string; success: boolean; message: string }
+export type GhAuthStatus = { loggedIn: boolean; ghMissing: boolean; user: string | null }
+export type GithubRepoResult = { fullName: string; description: string | null; stars: number; url: string | null }
 export type PlatformInfo = { os: string; isWsl: boolean; wslDistro: string | null; homeDir: string }
 export type RepoInfo = { path: string; relativePath: string; name: string; depth: number; kind: RepoKind; currentBranch: string | null; lastCommit: CommitInfo | null; status: RepoStatus; aheadBehind: AheadBehind | null; remoteUrl: string | null; remoteShort: string | null; children: RepoInfo[] }
 export type RepoKind = "git" | "submodule" | "parentFolder"

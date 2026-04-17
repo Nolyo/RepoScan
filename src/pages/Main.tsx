@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { RefreshCw, Download, Settings, Moon, Sun, Monitor } from "lucide-react";
+import { RefreshCw, Download, Settings, Moon, Sun, Monitor, Plus } from "lucide-react";
 import { commands } from "../bindings";
 import { unwrap } from "../lib/api";
 import { useConfig, useRepos, useAvailableEditors, useInvalidateRepos } from "../hooks/useRepos";
@@ -14,6 +14,7 @@ import SearchBar from "../components/toolbar/SearchBar";
 import FilterBar from "../components/toolbar/FilterBar";
 import FetchSheet from "../components/toolbar/FetchSheet";
 import SettingsDialog from "../components/settings/SettingsDialog";
+import ClonePalette from "../components/clone-palette/ClonePalette";
 import { flattenRepos } from "../lib/repoUtils";
 
 export default function MainPage() {
@@ -23,8 +24,20 @@ export default function MainPage() {
   const { searchQuery, filters, setFetchSheetOpen } = useUiStore();
   const { theme, setTheme } = useSettingsStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [cloneOpen, setCloneOpen] = useState(false);
   const { progress, reset: resetProgress } = useFetchProgress();
   const invalidateRepos = useInvalidateRepos();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCloneOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const allGitRepos = flattenRepos(repos).filter((r) => r.kind !== "parentFolder");
 
@@ -70,6 +83,13 @@ export default function MainPage() {
           )}
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCloneOpen(true)}
+            title="Cloner un dépôt distant (Ctrl+K)"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground text-muted-foreground"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
           <button
             onClick={() => refetch()}
             title="Rafraîchir"
@@ -147,6 +167,7 @@ export default function MainPage() {
 
       <FetchSheet progress={progress} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <ClonePalette open={cloneOpen} onOpenChange={setCloneOpen} />
     </div>
   );
 }

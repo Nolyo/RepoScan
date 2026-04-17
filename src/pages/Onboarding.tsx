@@ -58,6 +58,8 @@ export default function OnboardingPage() {
       theme: "system",
       window: { width: 1400, height: 900 },
       preferredEditor: "vsCode",
+      defaultGithubOwner: "kering-technologies",
+      githubSearchAll: false,
       version: 1,
     };
     saveMutation.mutate(config);

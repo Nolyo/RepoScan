@@ -115,6 +115,28 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
               />
             </Field>
 
+            {/* GitHub org */}
+            <Field label="Organisation GitHub par défaut">
+              <input
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="ex. kering-technologies"
+                value={form.defaultGithubOwner}
+                onChange={(e) =>
+                  setForm((f) => f && { ...f, defaultGithubOwner: e.target.value })
+                }
+              />
+              <label className="flex items-center gap-2 text-xs text-muted-foreground select-none mt-1.5">
+                <input
+                  type="checkbox"
+                  checked={form.githubSearchAll}
+                  onChange={(e) =>
+                    setForm((f) => f && { ...f, githubSearchAll: e.target.checked })
+                  }
+                />
+                Chercher sur tout GitHub par défaut
+              </label>
+            </Field>
+
             {/* Theme */}
             <Field label="Thème">
               <div className="flex gap-2">

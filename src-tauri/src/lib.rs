@@ -33,6 +33,10 @@ pub fn run() {
             commands::onboarding::is_first_run,
             commands::onboarding::detect_default_repo_path,
             commands::onboarding::platform_info,
+            commands::github::check_gh_auth,
+            commands::github::search_github_repos,
+            commands::github::clone_github_repo,
+            commands::github::install_repo_deps,
         ]);
 
     // Export TypeScript bindings in debug builds
