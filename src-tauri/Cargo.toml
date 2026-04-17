@@ -1,6 +1,6 @@
 [package]
 name = "reposcan"
-version = "0.1.0-beta.3"
+version = "0.1.0-beta.4"
 description = "Local Git repositories dashboard"
 authors = ["Nolyo"]
 edition = "2021"

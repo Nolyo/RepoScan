@@ -16,8 +16,10 @@ jobs:
         include:
           - platform: ubuntu-22.04
             rust-target: x86_64-unknown-linux-gnu
+            args: ""
           - platform: windows-latest
             rust-target: x86_64-pc-windows-msvc
+            args: "--target x86_64-pc-windows-msvc --bundles nsis"
 
     runs-on: ${{ matrix.platform }}
 
@@ -85,7 +87,7 @@ jobs:
           releaseName: "RepoScan ${{ github.ref_name }}"
           releaseDraft: false
           prerelease: ${{ steps.channel.outputs.prerelease }}
-          args: ${{ matrix.rust-target == 'x86_64-unknown-linux-gnu' && '' || '--target x86_64-pc-windows-msvc --bundles nsis' }}
+          args: ${{ matrix.args }}
 
   # Second job: once both platforms are built, mirror latest.json as beta.json
   # on the rolling "beta-channel" release, so beta users receive stable releases too.

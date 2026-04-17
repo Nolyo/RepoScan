@@ -1,6 +1,6 @@
 {
   "productName": "RepoScan",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "identifier": "dev.reposcan.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
