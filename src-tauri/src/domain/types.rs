@@ -95,6 +95,8 @@ pub struct AppConfig {
     pub default_github_owner: String,
     #[serde(default)]
     pub github_search_all: bool,
+    #[serde(default)]
+    pub update_channel: UpdateChannel,
     pub version: u32,
 }
 
@@ -115,9 +117,18 @@ impl Default for AppConfig {
             preferred_editor: Editor::VsCode,
             default_github_owner: default_github_owner(),
             github_search_all: false,
+            update_channel: UpdateChannel::default(),
             version: 1,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Type, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum UpdateChannel {
+    #[default]
+    Stable,
+    Beta,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type, PartialEq)]

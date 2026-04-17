@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            rust-target: x86_64-unknown-linux-gnu
+          - platform: windows-latest
+            rust-target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect channel
+        id: channel
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == *-beta* || "$TAG" == *-rc* || "$TAG" == *-alpha* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Linux build deps
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev
+
+      - name: Install front deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build, sign and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "RepoScan ${{ github.ref_name }}"
+          releaseDraft: false
+          prerelease: ${{ steps.channel.outputs.prerelease }}
+          args: ${{ matrix.rust-target == 'x86_64-unknown-linux-gnu' && '' || '--target x86_64-pc-windows-msvc' }}
+
+  # Second job: once both platforms are built, mirror latest.json as beta.json
+  # on the rolling "beta-channel" release, so beta users receive stable releases too.
+  update-beta-channel:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure beta-channel release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view beta-channel > /dev/null 2>&1; then
+            gh release create beta-channel \
+              --title "Beta Channel (rolling)" \
+              --notes "Rolling endpoint for the beta update channel. Assets are overwritten on each release." \
+              --prerelease
+          fi
+
+      - name: Mirror latest.json as beta.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # The source release assets from tauri-action are on the tag release.
+          # latest.json is produced for stable tags; for beta tags it's named the same
+          # but uploaded to the prerelease tag. We fetch whichever updater JSON exists.
+          mkdir -p _beta
+          cd _beta
+          if gh release view "$TAG" --json assets -q '.assets[].name' | grep -q '^latest.json$'; then
+            gh release download "$TAG" --pattern 'latest.json' --output latest.json
+            cp latest.json beta.json
+            gh release upload beta-channel beta.json --clobber
+          else
+            echo "No latest.json asset on tag $TAG — skipping beta mirror"
+          fi

@@ -37,6 +37,8 @@ pub fn run() {
             commands::github::search_github_repos,
             commands::github::clone_github_repo,
             commands::github::install_repo_deps,
+            commands::updater::check_for_update,
+            commands::updater::install_update,
         ]);
 
     // Export TypeScript bindings in debug builds
@@ -60,6 +62,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)

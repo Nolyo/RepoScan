@@ -20,6 +20,7 @@
     "clipboard-manager:allow-read-text",
     "os:allow-os-type",
     "os:allow-locale",
-    "log:allow-log"
+    "log:allow-log",
+    "updater:default"
   ]
 }

@@ -3,9 +3,10 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
-import { X, FolderOpen } from "lucide-react";
-import { commands, type AppConfig } from "../../bindings";
+import { X, FolderOpen, RefreshCw } from "lucide-react";
+import { commands, type AppConfig, type UpdateChannel } from "../../bindings";
 import { useConfig } from "../../hooks/useRepos";
+import { useAppVersion, runUpdateCheck } from "../../hooks/useUpdater";
 import { unwrap } from "../../lib/api";
 import { useSettingsStore } from "../../stores/settings";
 
@@ -18,6 +19,8 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
   const { data: config } = useConfig();
   const [form, setForm] = useState<AppConfig | null>(null);
   const { theme, setTheme } = useSettingsStore();
+  const { data: appVersion } = useAppVersion();
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -135,6 +138,46 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
                 />
                 Chercher sur tout GitHub par défaut
               </label>
+            </Field>
+
+            {/* Update channel */}
+            <Field label="Canal de mise à jour">
+              <div className="flex gap-2">
+                {(["stable", "beta"] as const).map((ch) => {
+                  const current: UpdateChannel = form.updateChannel ?? "stable";
+                  return (
+                    <button
+                      key={ch}
+                      onClick={() => setForm((f) => f && { ...f, updateChannel: ch })}
+                      className={`flex-1 h-8 text-xs rounded-md border capitalize ${
+                        current === ch
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-input hover:bg-accent"
+                      }`}
+                    >
+                      {ch === "stable" ? "Stable" : "Bêta"}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                <span>Version installée : {appVersion ?? "…"}</span>
+                <button
+                  onClick={async () => {
+                    setCheckingUpdate(true);
+                    try {
+                      await runUpdateCheck({ silent: false });
+                    } finally {
+                      setCheckingUpdate(false);
+                    }
+                  }}
+                  disabled={checkingUpdate}
+                  className="inline-flex items-center gap-1 hover:text-foreground disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3 w-3 ${checkingUpdate ? "animate-spin" : ""}`} />
+                  Vérifier maintenant
+                </button>
+              </div>
             </Field>
 
             {/* Theme */}

@@ -42,6 +42,20 @@
       "deb": {
         "depends": ["git"]
       }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM4MTM0QUUyNTQzMDI5RDgKUldUWUtUQlU0a29UeUlvTTMzQ0l0cTkyRnFnU0F4UEIrNTNURnBaRG1HeGRUUFcxZ3BKZ0xzNkkK",
+      "endpoints": [
+        "https://github.com/Nolyo/RepoScan/releases/latest/download/latest.json"
+      ],
+      "dialog": false,
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

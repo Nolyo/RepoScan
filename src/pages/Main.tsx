@@ -9,6 +9,7 @@ import { useConfig, useRepos, useAvailableEditors, useInvalidateRepos } from "..
 import { useUiStore } from "../stores/ui";
 import { useSettingsStore } from "../stores/settings";
 import { useFetchProgress } from "../hooks/useFetchProgress";
+import { useStartupUpdateCheck } from "../hooks/useUpdater";
 import RepoTable from "../components/repo-table/RepoTable";
 import SearchBar from "../components/toolbar/SearchBar";
 import FilterBar from "../components/toolbar/FilterBar";
@@ -27,6 +28,7 @@ export default function MainPage() {
   const [cloneOpen, setCloneOpen] = useState(false);
   const { progress, reset: resetProgress } = useFetchProgress();
   const invalidateRepos = useInvalidateRepos();
+  useStartupUpdateCheck();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -129,6 +129,22 @@ async installRepoDeps(repoPath: string, manager: DepManager) : Promise<Result<nu
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async checkForUpdate() : Promise<Result<UpdateInfo | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("check_for_update") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async installUpdate() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("install_update") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -143,7 +159,7 @@ async installRepoDeps(repoPath: string, manager: DepManager) : Promise<Result<nu
 /** user-defined types **/
 
 export type AheadBehind = { ahead: number; behind: number; hasUpstream: boolean }
-export type AppConfig = { rootPath: string; maxScanDepth: number; showEmptyFolders: boolean; fetchTimeoutSeconds: number; fetchConcurrency: number; theme: Theme; window: WindowState; preferredEditor: Editor; defaultGithubOwner?: string; githubSearchAll?: boolean; version: number }
+export type AppConfig = { rootPath: string; maxScanDepth: number; showEmptyFolders: boolean; fetchTimeoutSeconds: number; fetchConcurrency: number; theme: Theme; window: WindowState; preferredEditor: Editor; defaultGithubOwner?: string; githubSearchAll?: boolean; updateChannel?: UpdateChannel; version: number }
 export type CloneOutcome = { clonePath: string; depManager: DepManager | null }
 export type CommitInfo = { shortHash: string; subject: string; dateIso: string }
 export type DepManager = "yarn" | "npm"
@@ -157,6 +173,8 @@ export type RepoKind = "git" | "submodule" | "parentFolder"
 export type RepoStatus = { clean: boolean; modified: number; added: number; deleted: number; renamed: number; untracked: number; conflicted: number; stagedModified: number }
 export type ScanPreview = { reposCount: number; foldersCount: number; sample: string[] }
 export type Theme = "system" | "light" | "dark"
+export type UpdateChannel = "stable" | "beta"
+export type UpdateInfo = { version: string; currentVersion: string; date: string | null; body: string | null }
 export type WindowState = { width: number; height: number }
 
 /** tauri-specta globals **/
