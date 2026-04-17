@@ -119,12 +119,36 @@
     "cloning": "Cloning…",
     "inProgress": "In progress…",
     "navigate": "↑↓ to navigate · ↵ to clone",
-    "waiting": "Waiting for output…"
+    "waiting": "Waiting for output…",
+    "installFailed": "Install failed: {{error}}",
+    "openEditorFailed": "Failed to open editor: {{error}}",
+    "cloned": "Repository cloned: {{path}}"
   },
   "header": {
     "refreshTitle": "Refresh",
     "fetchAll": "Fetch all",
     "refreshGithub": "Refresh GitHub integrations",
     "changeTheme": "Change theme"
+  },
+  "github": {
+    "prOpen_one": "{{count}} open PR",
+    "prOpen_other": "{{count}} open PRs",
+    "ciFallback": "CI",
+    "ci": {
+      "success": "success",
+      "failure": "failure",
+      "pending": "pending",
+      "neutral": "neutral",
+      "unknown": "unknown"
+    }
+  },
+  "updater": {
+    "error": "Updater error: {{error}}",
+    "upToDate": "RepoScan is up to date.",
+    "available": "Update available: {{version}}",
+    "notesUnavailable": "Release notes unavailable.",
+    "installRestart": "Install and restart",
+    "installing": "Downloading and installing…",
+    "installFailed": "Installation failed: {{error}}"
   }
 }

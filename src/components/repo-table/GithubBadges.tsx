@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { GitPullRequest, CheckCircle2, XCircle, Clock, CircleDashed } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { commands, type RepoIntegration, type CiState } from "../../bindings";
 import { cn } from "../../lib/utils";
 import { unwrap } from "../../lib/api";
@@ -8,14 +9,6 @@ interface Props {
   integration: RepoIntegration | undefined;
   loading: boolean;
 }
-
-const CI_LABEL: Record<CiState, string> = {
-  success: "succès",
-  failure: "échec",
-  pending: "en cours",
-  neutral: "neutre",
-  unknown: "inconnu",
-};
 
 function ciIcon(state: CiState | null | undefined) {
   switch (state) {
@@ -41,6 +34,8 @@ async function openUrl(url: string) {
 }
 
 export default function GithubBadges({ integration, loading }: Props) {
+  const { t } = useTranslation();
+
   if (loading && !integration) {
     return <span className="text-xs text-muted-foreground">…</span>;
   }
@@ -52,6 +47,9 @@ export default function GithubBadges({ integration, loading }: Props) {
   const { prCount, prUrl, ciState, ciUrl, ciWorkflowName } = integration;
   const hasPr = typeof prCount === "number" && prCount > 0 && prUrl;
   const ci = ciIcon(ciState);
+  const ciTitle = ci
+    ? `${ciWorkflowName ?? t("github.ciFallback")} · ${t(`github.ci.${ciState ?? "unknown"}`)}`
+    : "";
 
   return (
     <span className="inline-flex items-center gap-2">
@@ -64,7 +62,7 @@ export default function GithubBadges({ integration, loading }: Props) {
             "bg-violet-100 text-violet-800 hover:bg-violet-200",
             "dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50",
           )}
-          title={`${prCount} PR ouverte${prCount! > 1 ? "s" : ""}`}
+          title={t("github.prOpen", { count: prCount! })}
         >
           <GitPullRequest className="h-3 w-3" />
           {prCount}
@@ -78,14 +76,14 @@ export default function GithubBadges({ integration, loading }: Props) {
           type="button"
           onClick={() => openUrl(ciUrl)}
           className={cn("inline-flex items-center", ci.className)}
-          title={`${ciWorkflowName ?? "CI"} · ${CI_LABEL[ciState as CiState]}`}
+          title={ciTitle}
         >
           <ci.Icon className="h-4 w-4" />
         </button>
       ) : ci ? (
         <span
           className={cn("inline-flex items-center", ci.className)}
-          title={`${ciWorkflowName ?? "CI"} · ${CI_LABEL[ciState as CiState]}`}
+          title={ciTitle}
         >
           <ci.Icon className="h-4 w-4" />
         </span>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
+import i18n from "../i18n";
 import { commands, type Editor } from "../bindings";
 
 type ClonePhase = "cloning" | "cloned" | "installing" | "installed" | "done" | "error";
@@ -69,7 +70,7 @@ export function useCloneRepo(onDone?: () => void) {
             await commands.installRepoDeps(outcome.clonePath, outcome.depManager),
           );
         } catch (e) {
-          toast.error(`Installation échouée : ${String(e)}`);
+          toast.error(i18n.t("clone.installFailed", { error: String(e) }));
         }
       }
 
@@ -77,14 +78,14 @@ export function useCloneRepo(onDone?: () => void) {
         try {
           unwrap(await commands.openInEditor(outcome.clonePath, opts.editor));
         } catch (e) {
-          toast.error(`Ouverture éditeur échouée : ${String(e)}`);
+          toast.error(i18n.t("clone.openEditorFailed", { error: String(e) }));
         }
       }
 
       return outcome;
     },
     onSuccess: (outcome) => {
-      toast.success(`Dépôt cloné : ${outcome.clonePath}`);
+      toast.success(i18n.t("clone.cloned", { path: outcome.clonePath }));
       invalidateRepos();
       onDone?.();
     },

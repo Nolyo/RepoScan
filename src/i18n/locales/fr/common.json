@@ -119,12 +119,36 @@
     "cloning": "Clonage…",
     "inProgress": "En cours…",
     "navigate": "↑↓ pour naviguer · ↵ pour cloner",
-    "waiting": "En attente de la sortie…"
+    "waiting": "En attente de la sortie…",
+    "installFailed": "Installation échouée : {{error}}",
+    "openEditorFailed": "Ouverture éditeur échouée : {{error}}",
+    "cloned": "Dépôt cloné : {{path}}"
   },
   "header": {
     "refreshTitle": "Rafraîchir",
     "fetchAll": "Fetch all",
     "refreshGithub": "Actualiser les intégrations GitHub",
     "changeTheme": "Changer le thème"
+  },
+  "github": {
+    "prOpen_one": "{{count}} PR ouverte",
+    "prOpen_other": "{{count}} PR ouvertes",
+    "ciFallback": "CI",
+    "ci": {
+      "success": "succès",
+      "failure": "échec",
+      "pending": "en cours",
+      "neutral": "neutre",
+      "unknown": "inconnu"
+    }
+  },
+  "updater": {
+    "error": "Erreur updater : {{error}}",
+    "upToDate": "RepoScan est à jour.",
+    "available": "Mise à jour disponible : {{version}}",
+    "notesUnavailable": "Notes de release indisponibles.",
+    "installRestart": "Installer et redémarrer",
+    "installing": "Téléchargement et installation…",
+    "installFailed": "Installation échouée : {{error}}"
   }
 }
