@@ -1,127 +1,106 @@
 # RepoScan
 
-Dashboard local pour visualiser l'état de tous vos dépôts Git dans un répertoire.
+A local dashboard to visualize the state of every Git repository under a given folder. Built with [Tauri](https://tauri.app/) (Rust) and React.
 
-Affiche pour chaque repo : branche courante, dernier commit, modifications en cours, synchronisation avec l'origin.
+For each repo, RepoScan shows the current branch, last commit, working-tree changes, and sync status with the remote. You can fetch all repos in parallel, open any of them in your preferred editor or file manager, and clone GitHub repos from inside the app.
 
-## Démarrage rapide
+## Installation
 
-### Depuis Windows (double-clic)
+Prebuilt installers are published on the [Releases page](https://github.com/Nolyo/RepoScan/releases).
 
-1. Ouvrez le dossier du projet dans l'Explorateur Windows :
-   ```
-   \\wsl.localhost\<Distro>\home\<user>\www\RepoScan
-   ```
-2. Double-cliquez sur **`RepoScan.bat`**
+### Windows
 
-**Premier lancement** : une fenêtre de terminal s'ouvre, installe automatiquement les dépendances (`python3-tk`), vous guide dans la configuration, puis l'application démarre. La fenêtre se ferme toute seule.
+Download the latest `.exe` (NSIS installer) from the releases page and run it.
 
-**Lancements suivants** : l'application démarre directement, sans aucune console visible.
+> On first launch, Windows SmartScreen may show an *"Unknown publisher"* warning. Click **More info** → **Run anyway**. The app is signed with the Tauri updater key (which guarantees update integrity) but not with a Windows code-signing certificate yet, so SmartScreen has not built a reputation for it.
 
-### Depuis WSL / Linux
+### Linux (Debian / Ubuntu / WSL)
 
 ```bash
-git clone <url> ~/www/RepoScan
-cd ~/www/RepoScan
-./run.sh
+# Download the latest .deb
+gh release download --repo Nolyo/RepoScan --pattern "*.deb"
+
+# Install (apt will pull `git` automatically if missing)
+sudo apt install ./RepoScan_*_amd64.deb
+
+# Launch
+reposcan
 ```
 
-## Raccourci bureau (optionnel)
+On **WSL2 + Windows 11**, the GUI opens directly via WSLg — no extra setup needed. An entry named *RepoScan* also appears in the Windows Start menu.
 
-Pour créer un raccourci sur le bureau Windows, ouvrez le dossier `scripts\windows` dans l'Explorateur et double-cliquez sur `setup_desktop_shortcut.bat`.
+### Linux (Fedora / RHEL)
 
-Voir les détails dans [docs/INSTRUCTIONS_RACCOURCI.md](docs/INSTRUCTIONS_RACCOURCI.md).
+Download the latest `.rpm` from the releases page:
 
-## Configuration
-
-La configuration est stockée dans `config/config.json` (créé automatiquement par l'assistant).
-
-Pour modifier les paramètres directement :
-
-```json
-{
-  "default_repository_path": "/home/user/www",
-  "max_scan_depth": 3,
-  "fetch_timeout_seconds": 30,
-  "gui_window_size": "1400x1000",
-  "show_empty_folders": true,
-  "windows": {
-    "distro": "Ubuntu-22.04",
-    "linux_project_path": "/home/user/www/RepoScan"
-  }
-}
-```
-
-Voir la référence complète dans [docs/CONFIG.md](docs/CONFIG.md).
-
-## Fonctionnalités
-
-- Scan récursif jusqu'à 3 niveaux de profondeur (configurable)
-- Détection automatique de tous les dépôts Git
-- Affichage de la branche, du dernier commit, du statut et de la synchro avec l'origin
-- Interface graphique (tkinter) avec recherche, filtres et codes couleur
-- Interface console en fallback si tkinter n'est pas disponible
-- Ouverture d'un repo dans l'Explorateur, VS Code ou Cursor depuis le menu contextuel
-- Ouverture du repo sur GitHub depuis le menu contextuel
-- Raccourcis clavier : `Ctrl+Entrée` (VS Code), `Ctrl+C` (copier le chemin)
-- "Fetch All" : synchronisation de tous les repos en arrière-plan
-- Compatible WSL : conversion automatique des chemins Linux ↔ Windows
-
-## Prérequis
-
-- Python 3.10+
-- Git
-- WSL2 (pour l'utilisation sous Windows)
-- `python3-tk` (optionnel, pour l'interface graphique)
-
-Installation de tkinter sous Ubuntu/Debian :
 ```bash
-sudo apt-get install python3-tk
+sudo dnf install ./RepoScan_*.x86_64.rpm
+reposcan
 ```
 
-## Architecture
+### Linux (AppImage)
 
-```
-RepoScan/
-├── RepoScan.bat                     # Point d'entrée Windows (double-clic)
-├── run.sh                           # Point d'entrée WSL/Linux
-├── config/
-│   ├── config.example.json          # Template de configuration
-│   └── config.json                  # Configuration utilisateur (gitignored)
-├── docs/
-│   ├── CONFIG.md                    # Référence configuration
-│   └── INSTRUCTIONS_RACCOURCI.md   # Guide raccourci Windows
-├── scripts/
-│   ├── linux/
-│   │   └── launch_explorer.sh       # Lanceur Linux/WSL
-│   └── windows/
-│       ├── launch.bat               # Lanceur Windows → WSL
-│       ├── launch_silent.ps1        # Lanceur silencieux
-│       ├── setup_desktop_shortcut.bat
-│       └── create_desktop_shortcut.ps1
-└── src/
-    ├── config_manager.py            # Gestion de la configuration
-    ├── setup_wizard.py              # Assistant de configuration (1er lancement)
-    ├── github_repo_explorer.py      # Interface graphique
-    └── console_repo_explorer.py     # Interface console
-```
-
-## Dépannage
-
-### "ModuleNotFoundError: No module named 'tkinter'"
 ```bash
-sudo apt-get install python3-tk
+chmod +x RepoScan_*.AppImage
+./RepoScan_*.AppImage
 ```
 
-### "Permission denied" sur le script
+AppImage requires FUSE. On some minimal systems (including WSL without FUSE), prefer the `.deb` or `.rpm`.
+
+## Updates
+
+RepoScan ships with a built-in auto-updater. On startup the app checks for a new version and, if one is available, shows a toast with release notes and an **Install and restart** button.
+
+Two channels are available:
+
+- **Stable** (default): only stable releases.
+- **Beta**: receives pre-releases (e.g. `0.1.0-beta.4`) as well as stable releases. Pick this in **Settings → Update channel** if you want to help test new versions early.
+
+SemVer guarantees that a final release is always higher than its pre-releases (e.g. `0.2.0-beta.5 < 0.2.0`), so beta users automatically move to stable when it ships.
+
+## Usage
+
+On first launch, RepoScan asks for a **root folder** to scan — typically your `~/code` or `~/www` directory. It will recursively look for Git repos (up to a configurable depth) and list them.
+
+Key features:
+
+- Recursive scan with configurable depth and "show empty folders" toggle.
+- Per-repo view: branch, last commit, working-tree changes, ahead/behind vs. origin.
+- **Fetch All** with configurable concurrency and timeout.
+- Context menu on any repo: open in Explorer/Finder, open in your editor (VS Code, Cursor, IntelliJ, Zed, Neovim, etc.), copy path, open the remote URL on GitHub.
+- **Clone palette** (`Ctrl+K`): search and clone a GitHub repo into the root folder. Requires [`gh`](https://cli.github.com/) to be installed and authenticated (`gh auth login`).
+- Light / dark / system theme.
+
+## Development
+
+Requirements:
+
+- [pnpm](https://pnpm.io/) 9+
+- [Rust](https://rustup.rs/) stable (1.77+)
+- Platform-specific Tauri prerequisites: see [Tauri setup guide](https://tauri.app/start/prerequisites/). On Debian/Ubuntu:
+  ```bash
+  sudo apt install libwebkit2gtk-4.1-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev build-essential libxdo-dev
+  ```
+
+Run the dev build with hot reload:
+
 ```bash
-chmod +x run.sh scripts/linux/launch_explorer.sh
+pnpm install
+pnpm tauri dev
 ```
 
-### Les dépôts ne sont pas détectés
-Vérifiez que `default_repository_path` dans `config/config.json` pointe vers le bon dossier et que vos répertoires contiennent bien un sous-dossier `.git`.
+TypeScript bindings for Tauri commands are auto-generated by `tauri-specta` into `src/bindings.ts` on every dev build.
 
-### Le double-clic sur RepoScan.bat ne lance pas l'app
-- Vérifiez que WSL est démarré (`wsl --status` dans PowerShell)
-- Vérifiez que le chemin WSL du projet est accessible
-- Consultez le log dans `scripts/windows/launch.log` si vous utilisez `launch.bat`
+## Building from source
+
+```bash
+pnpm tauri build
+```
+
+Artifacts land in `src-tauri/target/release/bundle/` (`.deb`/`.rpm`/`.AppImage` on Linux, `.exe`/`.msi` on Windows, `.dmg`/`.app` on macOS). The standalone binary is also at `src-tauri/target/release/reposcan`.
+
+## Releasing
+
+See [`RELEASING.md`](RELEASING.md) for the full procedure: version bump, tagging conventions (`v1.2.3` stable, `v1.2.3-beta.N` for betas), signing-key setup, and CI workflow.
+
+Publishing is driven by GitHub Actions: pushing a `v*` tag triggers a matrix build for Linux and Windows, uploads signed artifacts to a GitHub Release, and mirrors `latest.json` to the rolling `beta-channel` release so beta users always see the newest version (stable or pre-release).
