@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "./stores/settings";
@@ -7,21 +7,17 @@ import OnboardingPage from "./pages/Onboarding";
 import MainPage from "./pages/Main";
 
 function AppRouter() {
-  const navigate = useNavigate();
-
+  // Always refetch on mount to avoid relying on a stale cache when the
+  // config file gets deleted/recreated outside the app.
   const { data: isFirstRun, isLoading } = useQuery({
     queryKey: ["is_first_run"],
     queryFn: () => invoke<boolean>("is_first_run"),
-    staleTime: Infinity,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 
-  useEffect(() => {
-    if (!isLoading && isFirstRun !== undefined) {
-      navigate(isFirstRun ? "/onboarding" : "/main", { replace: true });
-    }
-  }, [isFirstRun, isLoading, navigate]);
-
-  if (isLoading) {
+  if (isLoading || isFirstRun === undefined) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-muted-foreground text-sm">Chargement…</div>
@@ -33,7 +29,10 @@ function AppRouter() {
     <Routes>
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/main" element={<MainPage />} />
-      <Route path="*" element={<Navigate to="/main" replace />} />
+      <Route
+        path="*"
+        element={<Navigate to={isFirstRun ? "/onboarding" : "/main"} replace />}
+      />
     </Routes>
   );
 }

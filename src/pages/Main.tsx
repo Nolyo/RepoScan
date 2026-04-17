@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { RefreshCw, Download, Settings, Moon, Sun, Monitor } from "lucide-react";
 import { commands } from "../bindings";
+import { unwrap } from "../lib/api";
 import { useConfig, useRepos, useAvailableEditors, useInvalidateRepos } from "../hooks/useRepos";
 import { useUiStore } from "../stores/ui";
 import { useSettingsStore } from "../stores/settings";
@@ -15,7 +17,7 @@ import SettingsDialog from "../components/settings/SettingsDialog";
 import { flattenRepos } from "../lib/repoUtils";
 
 export default function MainPage() {
-  const { data: config } = useConfig();
+  const { data: config, isLoading: configLoading } = useConfig();
   const { data: repos = [], isLoading, refetch } = useRepos(config);
   const { data: editors = [] } = useAvailableEditors();
   const { searchQuery, filters, setFetchSheetOpen } = useUiStore();
@@ -27,10 +29,10 @@ export default function MainPage() {
   const allGitRepos = flattenRepos(repos).filter((r) => r.kind !== "parentFolder");
 
   const fetchAllMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       resetProgress();
       setFetchSheetOpen(true);
-      return commands.fetchAll(allGitRepos.map((r) => r.path));
+      return unwrap(await commands.fetchAll(allGitRepos.map((r) => r.path)));
     },
     onSuccess: (results) => {
       const failed = results.filter((r) => !r.success).length;
@@ -43,6 +45,10 @@ export default function MainPage() {
     },
     onError: (e) => toast.error(String(e)),
   });
+
+  if (!configLoading && !config?.rootPath) {
+    return <Navigate to="/onboarding" replace />;
+  }
 
   const themeIcon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
   const ThemeIcon = themeIcon;

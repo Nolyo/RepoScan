@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import type { FetchProgress } from "../bindings";
+
+export type FetchPhase = "queued" | "running" | "done" | "error";
+
+export type FetchProgress = {
+  repoPath: string;
+  repoName: string;
+  phase: FetchPhase;
+  message: string | null;
+  reposDone: number;
+  reposTotal: number;
+};
 
 export type FetchProgressMap = Record<string, FetchProgress>;
 

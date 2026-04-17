@@ -6,6 +6,7 @@ import {
 import type { RepoInfo, Editor } from "../../bindings";
 import { commands } from "../../bindings";
 import { useInvalidateRepos } from "../../hooks/useRepos";
+import { unwrap } from "../../lib/api";
 import { cn } from "../../lib/utils";
 
 interface Props {
@@ -37,30 +38,40 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
     commands.openInExplorer(repo.path).catch((e) => toast.error(String(e)));
   };
 
-  const openEditor = (editor: Editor) => {
-    commands.openInEditor(repo.path, editor).catch((e) => toast.error(String(e)));
+  const openEditor = async (editor: Editor) => {
+    try {
+      unwrap(await commands.openInEditor(repo.path, editor));
+    } catch (e) {
+      toast.error(String(e));
+    }
   };
 
-  const openRemote = () => {
+  const openRemote = async () => {
     if (!repo.remoteUrl) return;
-    commands
-      .openRemoteUrl(repo.remoteUrl)
-      .then(() => toast.success("Ouvert dans le navigateur"))
-      .catch((e) => toast.error(String(e)));
+    try {
+      unwrap(await commands.openRemoteUrl(repo.remoteUrl));
+      toast.success("Ouvert dans le navigateur");
+    } catch (e) {
+      toast.error(String(e));
+    }
   };
 
-  const copyPath = () => {
-    commands
-      .copyPath(repo.path)
-      .then(() => toast.success("Chemin copié"))
-      .catch((e) => toast.error(String(e)));
+  const copyPath = async () => {
+    try {
+      unwrap(await commands.copyPath(repo.path));
+      toast.success("Chemin copié");
+    } catch (e) {
+      toast.error(String(e));
+    }
   };
 
-  const copyCodeCmd = () => {
-    commands
-      .copyCodeCommand(repo.path)
-      .then(() => toast.success("Commande copiée"))
-      .catch((e) => toast.error(String(e)));
+  const copyCodeCmd = async () => {
+    try {
+      unwrap(await commands.copyCodeCommand(repo.path));
+      toast.success("Commande copiée");
+    } catch (e) {
+      toast.error(String(e));
+    }
   };
 
   const refresh = () => {
@@ -68,14 +79,17 @@ export default function RepoContextMenu({ repo, editors, children }: Props) {
   };
 
   const fetchRepo = () => {
-    toast.promise(commands.fetchRepo(repo.path), {
-      loading: `Fetch ${repo.name}…`,
-      success: (r) => {
-        invalidateRepos();
-        return r.message || `${repo.name} mis à jour`;
+    toast.promise(
+      (async () => unwrap(await commands.fetchRepo(repo.path)))(),
+      {
+        loading: `Fetch ${repo.name}…`,
+        success: (r) => {
+          invalidateRepos();
+          return r.message || `${repo.name} mis à jour`;
+        },
+        error: (e) => String(e),
       },
-      error: (e) => String(e),
-    });
+    );
   };
 
   return (

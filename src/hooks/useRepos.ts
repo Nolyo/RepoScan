@@ -19,7 +19,8 @@ export function useConfig() {
   return useQuery({
     queryKey: ["config"],
     queryFn: commands.loadConfig,
-    staleTime: Infinity,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 

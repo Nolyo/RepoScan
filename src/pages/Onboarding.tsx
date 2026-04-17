@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { FolderOpen, GitBranch, ArrowRight, Check } from "lucide-react";
 import { commands, type AppConfig } from "../bindings";
+import { unwrap } from "../lib/api";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [rootPath, setRootPath] = useState("");
   const [maxDepth, setMaxDepth] = useState(3);
@@ -32,8 +34,9 @@ export default function OnboardingPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (config: AppConfig) => commands.saveConfig(config),
+    mutationFn: async (config: AppConfig) => unwrap(await commands.saveConfig(config)),
     onSuccess: () => {
+      qc.setQueryData(["is_first_run"], false);
       toast.success("Configuration enregistrée !");
       navigate("/main", { replace: true });
     },
@@ -169,7 +172,7 @@ export default function OnboardingPage() {
 
   const currentStep = steps[step];
   const isLast = step === steps.length - 1;
-  const canNext = step === 0 || (step === 1 && !!rootPath);
+  const canNext = step !== 1 || !!rootPath;
 
   return (
     <div className="flex h-screen items-center justify-center bg-background p-4">

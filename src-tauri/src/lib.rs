@@ -40,7 +40,8 @@ pub fn run() {
     builder
         .export(
             specta_typescript::Typescript::default()
-                .bigint(specta_typescript::BigIntExportBehavior::Number),
+                .bigint(specta_typescript::BigIntExportBehavior::Number)
+                .header("// @ts-nocheck\n"),
             "../src/bindings.ts",
         )
         .expect("Failed to export TypeScript bindings");

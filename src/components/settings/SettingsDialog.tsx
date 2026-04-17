@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { X, FolderOpen } from "lucide-react";
 import { commands, type AppConfig } from "../../bindings";
 import { useConfig } from "../../hooks/useRepos";
+import { unwrap } from "../../lib/api";
 import { useSettingsStore } from "../../stores/settings";
 
 interface Props {
@@ -24,7 +25,7 @@ export default function SettingsDialog({ open: isOpen, onOpenChange }: Props) {
   }, [config, isOpen]);
 
   const saveMutation = useMutation({
-    mutationFn: (c: AppConfig) => commands.saveConfig(c),
+    mutationFn: async (c: AppConfig) => unwrap(await commands.saveConfig(c)),
     onSuccess: () => {
       toast.success("Paramètres sauvegardés");
       qc.invalidateQueries({ queryKey: ["config"] });
