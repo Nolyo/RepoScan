@@ -8,7 +8,12 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ChevronRight, ChevronDown, GitBranch, Folder } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  GitBranch,
+  Folder,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { RepoInfo, Editor, RepoIntegration } from "../../bindings";
 import { useUiStore } from "../../stores/ui";
@@ -17,7 +22,7 @@ import { formatRelativeDate } from "../../lib/utils";
 import { StatusBadge, SyncBadge } from "./StatusBadge";
 import GithubBadges from "./GithubBadges";
 import RepoContextMenu from "../context-menu/RepoContextMenu";
-import { cn } from "../../lib/utils";
+import { Tooltip } from "../ui/Tooltip";
 import { commands } from "../../bindings";
 
 interface Props {
@@ -68,7 +73,7 @@ export default function RepoTable({
         id: "name",
         accessorKey: "name",
         header: t("table.colRepo"),
-        size: 280,
+        size: 30,
         cell: ({ row }) => {
           const repo = row.original;
           const isFolder = repo.kind === "parentFolder";
@@ -77,7 +82,7 @@ export default function RepoTable({
 
           return (
             <div
-              className="flex items-center gap-1.5 min-w-0"
+              className="rs-repo-name"
               style={{ paddingLeft: `${repo.depth * 16}px` }}
             >
               {isFolder && hasChildren ? (
@@ -86,32 +91,37 @@ export default function RepoTable({
                     e.stopPropagation();
                     toggleExpanded(repo.path);
                   }}
-                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                  className="rs-chev"
+                  aria-label={isExpanded ? "Collapse" : "Expand"}
                 >
                   {isExpanded ? (
-                    <ChevronDown className="h-3.5 w-3.5" />
+                    <ChevronDown size={14} />
                   ) : (
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <ChevronRight size={14} />
                   )}
                 </button>
               ) : (
-                <span className="w-3.5 shrink-0" />
+                <span style={{ width: 14, display: "inline-block" }} />
               )}
               {isFolder ? (
-                <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Folder size={14} className="shrink-0" style={{ color: "hsl(var(--rs-muted-fg))" }} />
               ) : (
-                <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <GitBranch size={14} className="shrink-0" style={{ color: "hsl(var(--rs-muted-fg))" }} />
               )}
               <span
-                className={cn(
-                  "truncate text-sm",
-                  isFolder && "font-medium text-muted-foreground",
-                )}
+                className="truncate"
+                style={{
+                  maxWidth: 360,
+                  fontWeight: isFolder ? 500 : 400,
+                  color: isFolder
+                    ? "hsl(var(--rs-muted-fg))"
+                    : "hsl(var(--rs-fg))",
+                }}
               >
                 {repo.name}
               </span>
               {repo.kind === "submodule" && (
-                <span className="text-xs text-muted-foreground bg-muted rounded px-1">sub</span>
+                <span className="rs-sub-tag">sub</span>
               )}
             </div>
           );
@@ -121,13 +131,14 @@ export default function RepoTable({
         id: "currentBranch",
         accessorKey: "currentBranch",
         header: t("table.colBranch"),
-        size: 140,
+        size: 10,
         cell: ({ row }) => {
           const branch = row.original.currentBranch;
           if (!branch) return null;
           return (
-            <span className="text-xs font-mono text-muted-foreground truncate block max-w-[130px]">
-              {branch}
+            <span className="rs-branch" title={branch}>
+              <GitBranch size={11} />
+              <span className="truncate">{branch}</span>
             </span>
           );
         },
@@ -135,7 +146,7 @@ export default function RepoTable({
       {
         id: "status",
         header: t("table.colStatus"),
-        size: 130,
+        size: 4,
         cell: ({ row }) => {
           const repo = row.original;
           if (repo.kind === "parentFolder") return null;
@@ -145,28 +156,46 @@ export default function RepoTable({
       {
         id: "lastCommit",
         header: t("table.colLastCommit"),
-        size: 260,
+        size: 36,
         cell: ({ row }) => {
           const commit = row.original.lastCommit;
           if (!commit) return null;
           return (
-            <span className="text-xs font-mono text-muted-foreground truncate block max-w-[250px]">
-              <span className="text-foreground">{commit.shortHash}</span>{" "}
-              {commit.subject}
-            </span>
+            <Tooltip
+              content={
+                <div className="rs-tooltip-commit">
+                  <span className="rs-mono rs-tooltip-hash">{commit.shortHash}</span>
+                  <span className="rs-tooltip-subject">{commit.subject}</span>
+                </div>
+              }
+              side="top"
+              align="start"
+            >
+              <span className="truncate block" style={{ maxWidth: "100%" }}>
+                <span
+                  className="rs-mono"
+                  style={{ color: "hsl(var(--rs-fg))" }}
+                >
+                  {commit.shortHash}
+                </span>
+                <span className="rs-muted" style={{ marginLeft: 8 }}>
+                  {commit.subject}
+                </span>
+              </span>
+            </Tooltip>
           );
         },
       },
       {
         id: "date",
         header: t("table.colDate"),
-        size: 90,
+        size: 7,
         accessorFn: (row) => row.lastCommit?.dateIso ?? "",
         cell: ({ row }) => {
           const date = row.original.lastCommit?.dateIso;
           if (!date) return null;
           return (
-            <span className="text-xs text-muted-foreground" title={date}>
+            <span className="rs-muted" title={date}>
               {formatRelativeDate(date)}
             </span>
           );
@@ -175,26 +204,11 @@ export default function RepoTable({
       {
         id: "aheadBehind",
         header: t("table.colSync"),
-        size: 80,
+        size: 5,
         cell: ({ row }) => {
           const repo = row.original;
           if (repo.kind === "parentFolder") return null;
           return <SyncBadge ab={repo.aheadBehind} />;
-        },
-      },
-      {
-        id: "remoteShort",
-        accessorKey: "remoteShort",
-        header: t("table.colRemote"),
-        size: 160,
-        cell: ({ row }) => {
-          const remote = row.original.remoteShort;
-          if (!remote) return null;
-          return (
-            <span className="text-xs text-muted-foreground font-mono truncate block max-w-[150px]">
-              {remote}
-            </span>
-          );
         },
       },
       ...(githubEnabled
@@ -202,7 +216,7 @@ export default function RepoTable({
             {
               id: "github",
               header: t("table.colGithub"),
-              size: 110,
+              size: 8,
               cell: ({ row }) => {
                 const repo = row.original;
                 if (repo.kind === "parentFolder") return null;
@@ -232,69 +246,73 @@ export default function RepoTable({
   });
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="overflow-auto flex-1">
-        <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 z-10 bg-background border-b">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
+    <div className="rs-tbl-wrap flex-1">
+      <table className="rs-tbl">
+        <colgroup>
+          {table.getAllColumns().map((col) => (
+            <col key={col.id} style={{ width: `${col.getSize()}%` }} />
+          ))}
+        </colgroup>
+        <thead>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                const sorted = header.column.getIsSorted();
+                return (
                   <th
                     key={header.id}
-                    className="text-left px-3 py-2 text-xs font-medium text-muted-foreground whitespace-nowrap select-none"
-                    style={{ width: header.column.getSize() }}
+                    className="sortable"
                     onClick={header.column.getToggleSortingHandler()}
                   >
-                    <div className="flex items-center gap-1 cursor-pointer hover:text-foreground">
+                    <span className="sort-wrap">
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getIsSorted() === "asc" && " ↑"}
-                      {header.column.getIsSorted() === "desc" && " ↓"}
-                    </div>
+                      <span className="sort-ind">
+                        {sorted === "asc" ? (
+                          <svg viewBox="0 0 10 10" width="10" height="10" fill="currentColor">
+                            <path d="M5 2 L9 7 L1 7 Z" />
+                          </svg>
+                        ) : sorted === "desc" ? (
+                          <svg viewBox="0 0 10 10" width="10" height="10" fill="currentColor">
+                            <path d="M5 8 L9 3 L1 3 Z" />
+                          </svg>
+                        ) : null}
+                      </span>
+                    </span>
                   </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <RepoContextMenu
-                key={row.original.path}
-                repo={row.original}
-                editors={editors}
-              >
+                );
+              })}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => {
+            const repo = row.original;
+            const isFolder = repo.kind === "parentFolder";
+            return (
+              <RepoContextMenu key={repo.path} repo={repo} editors={editors}>
                 <tr
-                  className={cn(
-                    "border-b border-border/50 hover:bg-muted/30 transition-colors cursor-default select-none",
-                    row.original.kind === "parentFolder" && "bg-muted/10",
-                  )}
+                  className={isFolder ? "folder-row" : undefined}
                   onDoubleClick={() => {
-                    if (row.original.kind !== "parentFolder") {
-                      commands.openInExplorer(row.original.path);
-                    } else {
-                      toggleExpanded(row.original.path);
-                    }
+                    if (isFolder) toggleExpanded(repo.path);
+                    else commands.openInExplorer(repo.path);
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-3 py-1.5 overflow-hidden"
-                      style={{ maxWidth: cell.column.getSize() }}
-                    >
+                    <td key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
               </RepoContextMenu>
-            ))}
-          </tbody>
-        </table>
-        {visibleRepos.length === 0 && (
-          <div className="flex justify-center py-8 text-sm text-muted-foreground">
-            {t("app.noRepos")}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </tbody>
+      </table>
+      {visibleRepos.length === 0 && (
+        <div className="flex justify-center py-8 rs-muted text-sm">
+          {t("app.noRepos")}
+        </div>
+      )}
     </div>
   );
 }

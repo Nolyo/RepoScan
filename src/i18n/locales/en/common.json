@@ -237,12 +237,28 @@
   },
   "fetch": {
     "title": "Fetch in progress",
+    "done": "Fetch complete",
     "progress": "{{done}}/{{total}} done",
     "progressErrors": ", {{count}} error(s)",
     "waiting": "Waiting to start…",
     "allUpdated": "{{count}} repositories updated",
     "failedCount": "Fetch completed with {{count}} error(s)",
     "fetchError": "Fetch error"
+  },
+  "status": {
+    "clean": "Clean",
+    "dirty": "Modified",
+    "conflict": "Conflict"
+  },
+  "sync": {
+    "noUpstream": "no upstream"
+  },
+  "footer": {
+    "noScan": "Never scanned",
+    "lastScanJustNow": "Last scan just now",
+    "lastScanSec": "Last scan {{s}}s ago",
+    "lastScanMin": "Last scan {{m}}min ago",
+    "lastScanHour": "Last scan {{h}}h ago"
   },
   "contextMenu": {
     "openExplorer": "Open in explorer",
@@ -286,6 +302,7 @@
   "github": {
     "prOpen_one": "{{count}} open PR",
     "prOpen_other": "{{count}} open PRs",
+    "noPr": "No open PR",
     "ciFallback": "CI",
     "ci": {
       "success": "success",

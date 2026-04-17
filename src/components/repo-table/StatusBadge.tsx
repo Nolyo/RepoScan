@@ -1,39 +1,43 @@
-import { cn } from "../../lib/utils";
+import { useTranslation } from "react-i18next";
 import type { RepoStatus, AheadBehind } from "../../bindings";
 import { statusSummary } from "../../lib/repoUtils";
 
 export function StatusBadge({ status }: { status: RepoStatus }) {
+  const { t } = useTranslation();
+  const isConflict = status.conflicted > 0;
+  const isClean = status.clean;
+
+  const label = isClean
+    ? t("status.clean")
+    : isConflict
+    ? t("status.conflict")
+    : t("status.dirty");
+
+  const cls = isClean
+    ? "rs-pill rs-pill-clean"
+    : isConflict
+    ? "rs-pill rs-pill-conflict"
+    : "rs-pill rs-pill-dirty";
+
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        status.clean
-          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-          : status.conflicted > 0
-          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-          : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-      )}
-    >
-      {statusSummary(status)}
+    <span className={cls} title={isClean ? label : statusSummary(status)}>
+      <span className="rs-pill-dot" />
+      {label}
     </span>
   );
 }
 
 export function SyncBadge({ ab }: { ab: AheadBehind | null }) {
-  if (!ab) return <span className="text-muted-foreground text-xs">—</span>;
-  if (!ab.hasUpstream)
-    return <span className="text-xs text-muted-foreground">no upstream</span>;
+  const { t } = useTranslation();
+  if (!ab) return <span className="rs-sync-none">—</span>;
+  if (!ab.hasUpstream) return <span className="rs-sync-none">{t("sync.noUpstream")}</span>;
   if (ab.ahead === 0 && ab.behind === 0)
-    return <span className="text-xs text-muted-foreground">✓</span>;
+    return <span className="rs-sync-ok">✓</span>;
 
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-mono">
-      {ab.ahead > 0 && (
-        <span className="text-blue-600 dark:text-blue-400">↑{ab.ahead}</span>
-      )}
-      {ab.behind > 0 && (
-        <span className="text-orange-600 dark:text-orange-400">↓{ab.behind}</span>
-      )}
+    <span className="inline-flex items-center gap-2">
+      {ab.ahead > 0 && <span className="rs-sync-ahead">↑{ab.ahead}</span>}
+      {ab.behind > 0 && <span className="rs-sync-behind">↓{ab.behind}</span>}
     </span>
   );
 }

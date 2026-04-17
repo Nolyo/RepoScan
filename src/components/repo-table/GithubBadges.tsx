@@ -2,7 +2,6 @@ import { toast } from "sonner";
 import { GitPullRequest, CheckCircle2, XCircle, Clock, CircleDashed } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { commands, type RepoIntegration, type CiState } from "../../bindings";
-import { cn } from "../../lib/utils";
 import { unwrap } from "../../lib/api";
 
 interface Props {
@@ -10,16 +9,16 @@ interface Props {
   loading: boolean;
 }
 
-function ciIcon(state: CiState | null | undefined) {
+function ciIconFor(state: CiState | null | undefined) {
   switch (state) {
     case "success":
-      return { Icon: CheckCircle2, className: "text-green-600 dark:text-green-400" };
+      return { Icon: CheckCircle2, cls: "rs-gh-ci rs-gh-ci-ok" };
     case "failure":
-      return { Icon: XCircle, className: "text-red-600 dark:text-red-400" };
+      return { Icon: XCircle, cls: "rs-gh-ci rs-gh-ci-fail" };
     case "pending":
-      return { Icon: Clock, className: "text-amber-600 dark:text-amber-400" };
+      return { Icon: Clock, cls: "rs-gh-ci rs-gh-ci-pending" };
     case "neutral":
-      return { Icon: CircleDashed, className: "text-muted-foreground" };
+      return { Icon: CircleDashed, cls: "rs-gh-ci rs-gh-ci-neutral" };
     default:
       return null;
   }
@@ -37,55 +36,48 @@ export default function GithubBadges({ integration, loading }: Props) {
   const { t } = useTranslation();
 
   if (loading && !integration) {
-    return <span className="text-xs text-muted-foreground">…</span>;
+    return <span className="rs-gh-empty">…</span>;
   }
 
   if (!integration) {
-    return <span className="text-xs text-muted-foreground">—</span>;
+    return <span className="rs-gh-empty">—</span>;
   }
 
   const { prCount, prUrl, ciState, ciUrl, ciWorkflowName } = integration;
   const hasPr = typeof prCount === "number" && prCount > 0 && prUrl;
-  const ci = ciIcon(ciState);
+  const ci = ciIconFor(ciState);
   const ciTitle = ci
     ? `${ciWorkflowName ?? t("github.ciFallback")} · ${t(`github.ci.${ciState ?? "unknown"}`)}`
     : "";
 
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="rs-gh-wrap">
       {hasPr ? (
         <button
           type="button"
           onClick={() => openUrl(prUrl!)}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-            "bg-violet-100 text-violet-800 hover:bg-violet-200",
-            "dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50",
-          )}
+          className="rs-gh-pr"
           title={t("github.prOpen", { count: prCount! })}
         >
-          <GitPullRequest className="h-3 w-3" />
+          <GitPullRequest size={11} />
           {prCount}
         </button>
       ) : (
-        <span className="text-xs text-muted-foreground">·</span>
+        <span className="rs-gh-empty" title={t("github.noPr")}>·</span>
       )}
 
       {ci && ciUrl ? (
         <button
           type="button"
           onClick={() => openUrl(ciUrl)}
-          className={cn("inline-flex items-center", ci.className)}
+          className={ci.cls}
           title={ciTitle}
         >
-          <ci.Icon className="h-4 w-4" />
+          <ci.Icon size={14} />
         </button>
       ) : ci ? (
-        <span
-          className={cn("inline-flex items-center", ci.className)}
-          title={ciTitle}
-        >
-          <ci.Icon className="h-4 w-4" />
+        <span className={ci.cls} title={ciTitle}>
+          <ci.Icon size={14} />
         </span>
       ) : null}
     </span>

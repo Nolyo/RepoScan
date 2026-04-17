@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import "./i18n";
 import App from "./App";
+import { TooltipProvider } from "./components/ui/Tooltip";
 import "./styles/globals.css";
 
 const queryClient = new QueryClient({
@@ -20,8 +21,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
-        <Toaster position="bottom-right" richColors closeButton />
+        <TooltipProvider delayDuration={250} skipDelayDuration={300}>
+          <App />
+          <Toaster position="bottom-right" richColors closeButton />
+        </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

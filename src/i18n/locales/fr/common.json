@@ -237,12 +237,28 @@
   },
   "fetch": {
     "title": "Fetch en cours",
+    "done": "Fetch terminé",
     "progress": "{{done}}/{{total}} terminés",
     "progressErrors": ", {{count}} erreur(s)",
     "waiting": "En attente de démarrage…",
     "allUpdated": "{{count}} dépôts mis à jour",
     "failedCount": "Fetch terminé avec {{count}} erreur(s)",
     "fetchError": "Erreur de fetch"
+  },
+  "status": {
+    "clean": "Clean",
+    "dirty": "Modifié",
+    "conflict": "Conflit"
+  },
+  "sync": {
+    "noUpstream": "no upstream"
+  },
+  "footer": {
+    "noScan": "Jamais scanné",
+    "lastScanJustNow": "Dernier scan à l'instant",
+    "lastScanSec": "Dernier scan il y a {{s}} s",
+    "lastScanMin": "Dernier scan il y a {{m}} min",
+    "lastScanHour": "Dernier scan il y a {{h}} h"
   },
   "contextMenu": {
     "openExplorer": "Ouvrir dans l'explorateur",
@@ -286,6 +302,7 @@
   "github": {
     "prOpen_one": "{{count}} PR ouverte",
     "prOpen_other": "{{count}} PR ouvertes",
+    "noPr": "Aucune PR ouverte",
     "ciFallback": "CI",
     "ci": {
       "success": "succès",
